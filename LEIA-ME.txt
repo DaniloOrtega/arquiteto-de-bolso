@@ -1,0 +1,14 @@
+ARQUITETO DE BOLSO - COMO PUBLICAR NO GITHUB PAGES
+
+1. Crie uma conta em github.com (se ainda nao tiver).
+2. Clique em "+" > "New repository". Nome sugerido: arquiteto-de-bolso. Marque "Public". Crie.
+3. Na pagina do repositorio, clique em "uploading an existing file" e envie TODOS os arquivos desta pasta:
+   index.html, manifest.webmanifest, sw.js e a pasta icons (com os 3 PNG). Clique em "Commit changes".
+4. Va em Settings > Pages. Em "Branch" escolha main e a pasta / (root). Salve.
+5. Espere 1 a 2 minutos. O endereco sera: https://SEU-USUARIO.github.io/arquiteto-de-bolso/
+6. No Chrome do Android, abra o endereco. Toque nos tres pontinhos > "Instalar app" (ou "Adicionar a tela inicial").
+
+Observacoes:
+- O progresso fica salvo no aparelho. Use o backup do rodape para levar para outro aparelho.
+- Para atualizar o jogo no futuro, substitua o index.html no repositorio. O app pega a versao nova quando houver internet.
+- Se mudar o endereco do site, o progresso salvo nao acompanha: faca o backup antes.
