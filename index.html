@@ -335,6 +335,22 @@ body{
 .fb.sheet .cd{position:absolute;left:0;top:0;height:5px;width:100%;background:var(--good);transform-origin:left;animation:cdw linear forwards}
 @keyframes cdw{from{transform:scaleX(1)}to{transform:scaleX(0)}}
 @keyframes sheetup{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:none}}
+/* ===== Nuvem: login e ranking ===== */
+.cloud .fine,.fine{font-size:13px;color:var(--ink-2);margin:0}
+.cloud .row2{align-items:center}
+.txt{flex:1 1 100%;min-width:0;font:inherit;font-weight:700;background:var(--surface);color:var(--ink);border:2px solid var(--line);border-radius:14px;padding:12px 14px;min-height:48px}
+.txt:focus{outline:none;border-color:var(--accent)}
+.chiprow{display:flex;gap:8px;flex-wrap:wrap}
+.chipbtn{border:2px solid var(--line);background:var(--surface);color:var(--ink);border-radius:99px;padding:8px 14px;font-weight:800;min-height:40px}
+.chipbtn.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.rk{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.rk li{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:14px;background:var(--bg)}
+.rk li.me{background:var(--accent-soft);color:var(--accent)}
+.rk .pos{width:28px;text-align:center;font-weight:900}
+.rk .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:800}
+.code{font-weight:900;letter-spacing:.12em;color:var(--accent)}
+.chk{display:flex;gap:10px;align-items:flex-start;font-weight:700}
+.chk input{width:22px;height:22px;margin-top:2px;accent-color:var(--accent)}
 </style>
 
 <main id="app" aria-live="polite"></main>
@@ -2018,7 +2034,7 @@ var BYID={}; QS.forEach(function(q){BYID[q.id]=q;});
 
 /* ---------- Estado e armazenamento ---------- */
 var KEY="arquiteto-de-bolso.v2", OLD_KEY="arquiteto-de-bolso.v1";
-function defaults(){var p={};TRAIL_ORDER.forEach(function(t){p[t]={};});return {xp:0,streak:0,last:null,day:null,dayXp:0,placed:{},prog:p,review:{},stats:{}};}
+function defaults(){var p={};TRAIL_ORDER.forEach(function(t){p[t]={};});return {xp:0,streak:0,last:null,day:null,dayXp:0,placed:{},prog:p,review:{},stats:{},wk:{k:"",xp:0}};}
 function normalize(o){
   var d=defaults();
   if(o&&typeof o==="object"){
@@ -2045,13 +2061,13 @@ function restoreCode(txt){
   }catch(e){return false;}
 }
 var state=load();
-function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){} if(typeof cloudDirty==="function")cloudDirty();}
 
 function pad(n){return String(n).padStart(2,"0");}
 function dkey(d){d=d||new Date();return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());}
 function addDays(k,n){var p=k.split("-").map(Number);return dkey(new Date(p[0],p[1]-1,p[2]+n));}
 function touchDay(){var t=dkey(); if(state.last===t)return; state.streak=(state.last===addDays(t,-1))?state.streak+1:1; state.last=t;}
-function addXP(n){var t=dkey(); if(state.day!==t){state.day=t;state.dayXp=0;} state.xp+=n; state.dayXp+=n; touchDay();}
+function addXP(n){var t=dkey(); if(state.day!==t){state.day=t;state.dayXp=0;} state.xp+=n; state.dayXp+=n; var wkk=weekKey(); if(!state.wk||state.wk.k!==wkk)state.wk={k:wkk,xp:0}; state.wk.xp+=n; touchDay();}
 function streakNow(){var t=dkey(); return (state.last===t||state.last===addDays(t,-1))?state.streak:0;}
 function dayXpNow(){return state.day===dkey()?state.dayXp:0;}
 /* Repetição espaçada: toda questão respondida entra na agenda.
@@ -2256,6 +2272,7 @@ function renderHome(){
      '<div class="ring"><svg viewBox="0 0 76 76"><circle class="bg" cx="38" cy="38" r="32" fill="none" stroke-width="8"/>'+
      '<circle class="fg" cx="38" cy="38" r="32" fill="none" stroke-width="8" stroke-linecap="round" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+(C*(1-pctG/100)).toFixed(1)+'"/></svg><b>'+pctG+'%</b></div></section>';
 
+  h+=cloudCard();
   if(state.xp===0&&!Object.keys(state.placed).length){
     h+='<section class="card intro tc" style="--h:25"><span class="tbadge">'+ico("star")+'</span><div style="display:flex;flex-direction:column;gap:10px;flex:1;min-width:0"><h2>Por onde começar</h2><p class="muted">Faça o nivelamento geral ('+(PLACE_ALL_Q*GEN_ORDER.length)+' perguntas) para liberar o seu nível nas 12 trilhas básicas. As trilhas novas (proposta, integração, governança, IA e espanhol) têm teste próprio dentro de cada uma.</p><button class="primary" data-act="placement-all">Fazer o nivelamento geral</button></div></section>';
   }
@@ -2298,7 +2315,7 @@ function renderHome(){
   });
 
   h+='<footer class="foot"><p>Material de estudo independente, sem vínculo com AWS, Microsoft, Oracle ou outro fornecedor. As questões são originais e foram escritas a partir de conceitos de arquitetura; não são questões de prova. Confira detalhes na documentação oficial antes de usá-los em decisões reais.</p>'+
-     '<p>O progresso fica salvo só neste navegador, neste aparelho. Para guardar uma cópia ou levar para outro aparelho, use o backup.</p>'+
+     '<p>O progresso fica salvo neste aparelho'+(CLOUD_OK?' (e na nuvem, se você entrar com o Google)':'')+'. Para guardar uma cópia ou levar para outro aparelho, use o backup.</p>'+
      (showBackup?'<textarea id="bk" class="bk" rows="4" aria-label="Código de backup"></textarea><div class="row"><button class="secondary" data-act="bk-copy">Copiar código</button><button class="secondary" data-act="bk-restore">Restaurar deste texto</button></div>':'<button class="linkbtn" data-act="bk-open">Backup do progresso</button>')+
      '<button class="linkbtn" data-act="placement-all">Refazer o nivelamento geral</button>'+(confirmReset?'<div class="row"><button class="secondary" data-act="reset-yes">Confirmar: apagar progresso</button><button class="secondary" data-act="reset-no">Cancelar</button></div>'
                   :'<button class="linkbtn" data-act="reset">Apagar meu progresso</button>')+'</footer>';
@@ -2364,13 +2381,27 @@ function renderResult(){
 
 function render(){
   app.style.paddingBottom="";
-  if(view==="quiz"&&sess)renderQuiz(); else if(view==="result"&&res)renderResult(); else {view="home";renderHome();}
+  if(view==="quiz"&&sess)renderQuiz(); else if(view==="result"&&res)renderResult(); else if(view==="rank")renderRank(); else {view="home";renderHome();}
 }
 
+app.addEventListener("change",function(e){var t=e.target; if(t&&t.getAttribute&&t.getAttribute("data-act")==="global-toggle")setGlobal(t.checked);});
 app.addEventListener("click",function(e){
   var b=e.target.closest("[data-act]"); if(!b||b.disabled)return;
   var a=b.getAttribute("data-act");
   if(a==="home"){view="home";sess=null;confirmReset=false;showBackup=false;render();window.scrollTo(0,0);}
+  else if(a==="cloud-login")cloudLogin();
+  else if(a==="cloud-logout")cloudLogout();
+  else if(a==="rank-open"){view="rank";render();window.scrollTo(0,0);if(C.profile.nick)loadRank();}
+  else if(a==="rank-scope"){C.scope=b.getAttribute("data-s");loadRank();}
+  else if(a==="rank-tab"){C.tab=b.getAttribute("data-s");render();}
+  else if(a==="rank-refresh")loadRank();
+  else if(a==="nick-save")saveNick();
+  else if(a==="group-create"){var gn=document.getElementById("gname");createGroup(gn&&gn.value);}
+  else if(a==="group-join"){var gc=document.getElementById("gcode");joinGroup(gc&&gc.value);}
+  else if(a==="group-leave")leaveGroup(b.getAttribute("data-s"));
+  else if(a==="wipe"){C.confirmWipe=true;render();}
+  else if(a==="wipe-no"){C.confirmWipe=false;render();}
+  else if(a==="wipe-yes"){C.confirmWipe=false;wipeCloud();}
   else if(a==="placement-all")startPlacementAll();
   else if(a==="placement")startPlacement(b.getAttribute("data-t"));
   else if(a==="toggle"){var tt=b.getAttribute("data-t"); var cur=(openTrails[tt]!==undefined)?openTrails[tt]:(b.getAttribute("aria-expanded")==="true"); openTrails[tt]=!cur; render();}
@@ -2401,8 +2432,172 @@ app.addEventListener("click",function(e){
   else if(a==="reset-yes"){state=defaults();save();confirmReset=false;view="home";render();toast("Progresso apagado.");}
 });
 
+/* ---------- Nuvem: login, sincronização e ranking (Firebase) ---------- */
+var FB_CFG={apiKey:"AIzaSyCRziWwFP9s4tSJ8440ZKzF17NGkhIxk6c",authDomain:"arquiteto-de-bolso-83ac0.firebaseapp.com",projectId:"arquiteto-de-bolso-83ac0",storageBucket:"arquiteto-de-bolso-83ac0.firebasestorage.app",messagingSenderId:"326711119792",appId:"1:326711119792:web:9a7df05e96e2598a20d075"};
+var CLOUD_OK=/(^|\.)github\.io$/.test(location.hostname)||location.hostname==="localhost"||location.hostname==="127.0.0.1";
+var C={ready:false,user:null,fauth:null,fdb:null,profile:{nick:"",groups:[],global:false},busy:false,tab:"week",scope:"global",rank:null,rankLoading:false,sync:"",pushT:null,loaded:false};
+function weekKey(d){d=d||new Date();var x=new Date(d.getFullYear(),d.getMonth(),d.getDate());var dow=(x.getDay()+6)%7;x.setDate(x.getDate()-dow);return dkey(x);}
+function weekXpNow(){return (state.wk&&state.wk.k===weekKey())?state.wk.xp:0;}
+function cleanNick(s){return String(s||"").replace(/[<>&"'`\\\/]/g,"").replace(/\s+/g," ").trim().slice(0,20);}
+function pubDoc(){return {nick:C.profile.nick||"Arquiteto",xp:state.xp|0,wxp:weekXpNow()|0,wk:weekKey(),streak:streakNow()|0,t:Date.now()};}
+function loadScript(src){return new Promise(function(ok,no){var s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=no;document.head.appendChild(s);});}
+function cloudInit(){
+  if(!CLOUD_OK||!navigator.onLine&&false)return;
+  var B="https://www.gstatic.com/firebasejs/10.12.2/";
+  loadScript(B+"firebase-app-compat.js").then(function(){return loadScript(B+"firebase-auth-compat.js");}).then(function(){return loadScript(B+"firebase-firestore-compat.js");}).then(function(){
+    firebase.initializeApp(FB_CFG); C.fauth=firebase.auth(); C.fdb=firebase.firestore(); C.ready=true;
+    C.fauth.onAuthStateChanged(function(u){C.user=u; if(u){afterLogin();} else {C.loaded=false;C.profile={nick:"",groups:[],global:false};C.rank=null; if(view==="home"||view==="rank")render();}});
+    if(view==="home")render();
+  }).catch(function(){C.ready=false;});
+}
+function mergeStates(a,b){
+  var r=normalize(JSON.parse(JSON.stringify(a)));
+  r.xp=Math.max(a.xp||0,b.xp||0);
+  var nw=((a.last||"")>=(b.last||""))?a:b; r.streak=nw.streak||0; r.last=nw.last||null; r.day=nw.day||null; r.dayXp=nw.dayXp||0;
+  TRAIL_ORDER.forEach(function(t){
+    var pa=(a.placed||{})[t]||0,pb=(b.placed||{})[t]||0; if(Math.max(pa,pb))r.placed[t]=Math.max(pa,pb);
+    [1,2,3,4].forEach(function(l){
+      var x=(a.prog[t]||{})[l],y=(b.prog[t]||{})[l]; if(!x&&!y)return;
+      r.prog[t][l]={best:Math.max(x?x.best:0,y?y.best:0),done:!!((x&&x.done)||(y&&y.done))};
+    });
+  });
+  var ids={};Object.keys(a.review||{}).concat(Object.keys(b.review||{})).forEach(function(i){ids[i]=1;});
+  r.review={}; Object.keys(ids).forEach(function(i){var x=a.review[i],y=b.review[i]; r.review[i]=!x?y:(!y?x:(x.due>=y.due?x:y));});
+  var ks={};Object.keys(a.stats||{}).concat(Object.keys(b.stats||{})).forEach(function(k){ks[k]=1;});
+  r.stats={}; Object.keys(ks).forEach(function(k){var x=a.stats[k]||{r:0,w:0},y=b.stats[k]||{r:0,w:0}; r.stats[k]={r:Math.max(x.r||0,y.r||0),w:Math.max(x.w||0,y.w||0)};});
+  var wa=a.wk||{k:"",xp:0},wb=b.wk||{k:"",xp:0}; r.wk=wa.k>wb.k?wa:(wb.k>wa.k?wb:{k:wa.k,xp:Math.max(wa.xp||0,wb.xp||0)});
+  return r;
+}
+function afterLogin(){
+  var u=C.user; C.sync="Sincronizando…"; if(view==="home"||view==="rank")render();
+  C.fdb.collection("users").doc(u.uid).get().then(function(d){
+    if(d.exists){
+      var o=d.data()||{};
+      if(o.profile){C.profile={nick:cleanNick(o.profile.nick),groups:Array.isArray(o.profile.groups)?o.profile.groups.slice(0,10):[],global:!!o.profile.global};}
+      if(o.state){try{var cs=JSON.parse(o.state); state=mergeStates(state,normalize(cs)); save0();}catch(e){}}
+    }
+    C.loaded=true; return cloudPush(true);
+  }).then(function(){
+    C.sync="Salvo na nuvem"; if(!C.profile.nick){view="rank";} render();
+  }).catch(function(e){C.sync="Sem conexão com a nuvem. Seu progresso segue salvo neste aparelho."; if(view==="home"||view==="rank")render();});
+}
+function save0(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+function cloudDirty(){
+  if(!C.user||!C.loaded)return;
+  clearTimeout(C.pushT); C.pushT=setTimeout(function(){cloudPush(false).then(function(){C.sync="Salvo na nuvem";var el=document.getElementById("syncs");if(el)el.textContent=C.sync;}).catch(function(){C.sync="Falha ao salvar na nuvem. Tento de novo na próxima lição.";var el=document.getElementById("syncs");if(el)el.textContent=C.sync;});},4000);
+}
+function cloudPush(){
+  if(!C.user||!C.fdb)return Promise.resolve();
+  var u=C.user, db=C.fdb, ts=firebase.firestore.FieldValue.serverTimestamp(), ops=[];
+  ops.push(db.collection("users").doc(u.uid).set({state:JSON.stringify(state),profile:{nick:C.profile.nick,groups:C.profile.groups,global:C.profile.global},updated:ts}));
+  if(C.profile.nick){
+    var p=pubDoc();
+    C.profile.groups.forEach(function(g){ops.push(db.collection("groups").doc(g.code).collection("members").doc(u.uid).set(p));});
+    if(C.profile.global)ops.push(db.collection("global").doc(u.uid).set(p));
+  }
+  return Promise.all(ops);
+}
+function cloudLogin(){
+  if(!C.ready){toast("A nuvem ainda está carregando. Tente em instantes.");return;}
+  var pr=new firebase.auth.GoogleAuthProvider();
+  C.fauth.signInWithPopup(pr).catch(function(e){
+    if(e&&(e.code==="auth/popup-blocked"||e.code==="auth/operation-not-supported-in-this-environment")){C.fauth.signInWithRedirect(pr);}
+    else if(e&&e.code!=="auth/popup-closed-by-user"&&e.code!=="auth/cancelled-popup-request")toast("Não consegui entrar. Tente de novo.");
+  });
+}
+function cloudLogout(){C.fauth.signOut().then(function(){view="home";toast("Você saiu. Seu progresso continua neste aparelho.");render();});}
+function rankRows(list,tab){
+  var wk=weekKey();
+  return list.map(function(m){return {nick:cleanNick(m.nick)||"Arquiteto",xp:tab==="week"?(m.wk===wk?(m.wxp|0):0):(m.xp|0),streak:m.streak|0,me:!!(C.user&&m._id===C.user.uid)};})
+    .filter(function(m){return tab!=="week"||m.xp>0||m.me;}).sort(function(a,b){return b.xp-a.xp;}).slice(0,50);
+}
+function loadRank(){
+  if(!C.user||!C.loaded)return; C.rankLoading=true; C.rank=null; render();
+  var q;
+  if(C.scope==="global"){ q=C.fdb.collection("global").limit(200).get(); }
+  else { q=C.fdb.collection("groups").doc(C.scope).collection("members").limit(200).get(); }
+  q.then(function(snap){var l=[];snap.forEach(function(d){var x=d.data();x._id=d.id;l.push(x);}); C.rank=l; C.rankLoading=false; if(view==="rank")render();})
+   .catch(function(){C.rank=[];C.rankLoading=false;C.rankErr=true; if(view==="rank")render();});
+}
+function newCode(){var a="ABCDEFGHJKLMNPQRSTUVWXYZ23456789",s="";for(var i=0;i<6;i++)s+=a.charAt(Math.floor(Math.random()*a.length));return s;}
+function createGroup(name){
+  name=cleanNick(name); if(name.length<2){toast("Dê um nome à turma (mínimo 2 letras).");return;}
+  if(C.profile.groups.length>=5){toast("Limite de 5 turmas.");return;}
+  var tries=0;
+  (function go(){
+    var code=newCode();
+    C.fdb.collection("groups").doc(code).set({name:name,owner:C.user.uid,created:firebase.firestore.FieldValue.serverTimestamp()}).then(function(){
+      C.profile.groups.push({code:code,name:name}); C.scope=code; return cloudPush();
+    }).then(function(){toast("Turma criada. Código: "+code);loadRank();}).catch(function(){ if(++tries<3)go(); else toast("Não consegui criar a turma agora."); });
+  })();
+}
+function joinGroup(code){
+  code=String(code||"").toUpperCase().replace(/[^A-Z0-9]/g,""); if(code.length!==6){toast("O código tem 6 letras/números.");return;}
+  if(C.profile.groups.some(function(g){return g.code===code;})){toast("Você já está nessa turma.");C.scope=code;loadRank();return;}
+  if(C.profile.groups.length>=5){toast("Limite de 5 turmas.");return;}
+  C.fdb.collection("groups").doc(code).get().then(function(d){
+    if(!d.exists){toast("Turma não encontrada. Confira o código.");return;}
+    C.profile.groups.push({code:code,name:cleanNick(d.data().name)||code}); C.scope=code;
+    return cloudPush().then(function(){toast("Você entrou na turma.");loadRank();});
+  }).catch(function(){toast("Não consegui entrar na turma agora.");});
+}
+function leaveGroup(code){
+  C.fdb.collection("groups").doc(code).collection("members").doc(C.user.uid).delete().then(function(){
+    C.profile.groups=C.profile.groups.filter(function(g){return g.code!==code;}); if(C.scope===code)C.scope="global"; return cloudPush();
+  }).then(function(){toast("Você saiu da turma.");loadRank();}).catch(function(){toast("Não consegui sair agora.");});
+}
+function saveNick(){
+  var el=document.getElementById("nick"); var n=cleanNick(el&&el.value); if(n.length<2){toast("Escolha um apelido com pelo menos 2 letras. Não use seu e-mail.");return;}
+  if(/@/.test(el.value)){toast("Não use e-mail como apelido.");return;}
+  C.profile.nick=n; cloudPush().then(function(){toast("Apelido salvo.");loadRank();}).catch(function(){toast("Não consegui salvar agora.");});
+}
+function setGlobal(on){
+  C.profile.global=on; var p=on?C.fdb.collection("global").doc(C.user.uid).set(pubDoc()):C.fdb.collection("global").doc(C.user.uid).delete();
+  p.then(function(){return cloudPush();}).then(function(){toast(on?"Você aparece no ranking geral.":"Você saiu do ranking geral.");loadRank();}).catch(function(){C.profile.global=!on;toast("Não consegui mudar agora.");render();});
+}
+function wipeCloud(){
+  var u=C.user, db=C.fdb, ops=[];
+  C.profile.groups.forEach(function(g){ops.push(db.collection("groups").doc(g.code).collection("members").doc(u.uid).delete());});
+  ops.push(db.collection("global").doc(u.uid).delete()); ops.push(db.collection("users").doc(u.uid).delete());
+  Promise.all(ops).then(function(){return u.delete();}).then(function(){toast("Seus dados na nuvem e a conta foram apagados.");}).catch(function(){toast("Dados apagados. Para excluir a conta, saia e entre de novo e repita.");C.fauth.signOut();}).then(function(){view="home";render();});
+}
+function cloudCard(){
+  if(!CLOUD_OK||!C.ready)return "";
+  if(!C.user){
+    return '<section class="card cloud"><h2>Guarde seu progresso e entre no ranking</h2><p class="muted">Entre com sua conta Google para salvar o progresso na nuvem, usar em mais de um aparelho e competir com um grupo de amigos.</p><button class="primary" data-act="cloud-login">Entrar com Google</button><p class="fine">Guardamos apenas apelido, XP e progresso (Firebase, do Google). Seu e-mail nunca aparece no ranking e você pode apagar tudo quando quiser. Sem login, tudo continua funcionando neste aparelho.</p></section>';
+  }
+  return '<section class="card cloud"><div class="row2"><div><span class="label">Conectado</span><h2>'+esc(C.profile.nick||"Escolha seu apelido")+'</h2></div><div class="row"><button class="primary" data-act="rank-open">Ranking</button></div></div><p class="fine" id="syncs">'+esc(C.sync||"")+'</p></section>';
+}
+function renderRank(){
+  var h='<div class="qtop"><button class="ghost" data-act="home">Voltar</button><span class="count" style="margin-left:auto">Ranking</span></div>';
+  if(!C.user){app.innerHTML=h+'<section class="card"><p class="muted">Entre com o Google para ver o ranking.</p></section>';return;}
+  if(!C.profile.nick){
+    h+='<section class="card"><h2>Escolha seu apelido</h2><p class="muted">É o nome que aparece para os outros no ranking. Não use seu nome completo nem e-mail.</p><input id="nick" class="txt" maxlength="20" placeholder="Ex.: Arquiteto Danilo" autocomplete="off"><button class="primary" data-act="nick-save">Salvar apelido</button></section>';
+    app.innerHTML=h;return;
+  }
+  var gs=C.profile.groups, chips='<button class="chipbtn'+(C.scope==="global"?' on':'')+'" data-act="rank-scope" data-s="global">Geral</button>'+gs.map(function(g){return '<button class="chipbtn'+(C.scope===g.code?' on':'')+'" data-act="rank-scope" data-s="'+g.code+'">'+esc(g.name)+'</button>';}).join('');
+  h+='<section class="card"><div class="chiprow">'+chips+'</div><div class="chiprow"><button class="chipbtn'+(C.tab==="week"?' on':'')+'" data-act="rank-tab" data-s="week">Esta semana</button><button class="chipbtn'+(C.tab==="all"?' on':'')+'" data-act="rank-tab" data-s="all">Total</button></div>';
+  if(C.scope==="global"&&!C.profile.global)h+='<p class="muted">O ranking geral só mostra quem escolheu aparecer. Ative abaixo em "Minha conta" para entrar nele.</p>';
+  if(C.scope!=="global"){var g0=gs.filter(function(g){return g.code===C.scope;})[0]; if(g0)h+='<p class="fine">Código para convidar: <b class="code">'+esc(g0.code)+'</b></p>';}
+  if(C.rankLoading)h+='<p class="muted">Carregando…</p>';
+  else if(C.rank){
+    var rows=rankRows(C.rank,C.tab);
+    if(!rows.length)h+='<p class="muted">'+(C.rankErr?"Não consegui carregar o ranking agora.":"Ninguém pontuou ainda"+(C.tab==="week"?" nesta semana":"")+". Faça uma lição!")+'</p>';
+    else h+='<ol class="rk">'+rows.map(function(m,i){return '<li class="'+(m.me?'me':'')+'"><span class="pos">'+(i+1)+'</span><span class="nm">'+esc(m.nick)+(m.me?' (você)':'')+'</span><b>'+m.xp+' XP</b></li>';}).join('')+'</ol>';
+  }
+  h+='<button class="secondary" data-act="rank-refresh">Atualizar</button></section>';
+  h+='<section class="card"><h2>Turmas</h2><p class="muted">Crie uma turma e passe o código para os amigos, ou entre com um código que recebeu.</p><div class="row"><input id="gname" class="txt" maxlength="20" placeholder="Nome da nova turma"><button class="secondary" data-act="group-create">Criar</button></div><div class="row"><input id="gcode" class="txt" maxlength="6" placeholder="Código de 6 caracteres" autocapitalize="characters"><button class="secondary" data-act="group-join">Entrar</button></div>'+
+     gs.map(function(g){return '<div class="prow"><span>'+esc(g.name)+' · <b class="code">'+esc(g.code)+'</b></span><button class="linkbtn" data-act="group-leave" data-s="'+g.code+'">Sair</button></div>';}).join('')+'</section>';
+  h+='<section class="card"><h2>Minha conta</h2><div class="row"><input id="nick" class="txt" maxlength="20" value="'+esc(C.profile.nick)+'" aria-label="Apelido"><button class="secondary" data-act="nick-save">Salvar apelido</button></div>'+
+     '<label class="chk"><input type="checkbox" id="gl"'+(C.profile.global?' checked':'')+' data-act="global-toggle"> Aparecer no ranking geral (só apelido e XP)</label>'+
+     '<p class="fine">Seu e-mail nunca é mostrado. Apagar remove progresso, ranking e a conta da nuvem; o progresso deste aparelho permanece.</p>'+
+     '<div class="row"><button class="secondary" data-act="cloud-logout">Sair da conta</button>'+(C.confirmWipe?'<button class="secondary" data-act="wipe-yes">Confirmar: apagar meus dados na nuvem</button><button class="secondary" data-act="wipe-no">Cancelar</button>':'<button class="linkbtn" data-act="wipe">Apagar meus dados na nuvem</button>')+'</div></section>';
+  app.innerHTML=h;
+}
+
 /* expõe para teste local */
-window.__game={QS:QS,state:function(){return state;}};
+window.__game={QS:QS,state:function(){return state;},C:C,merge:mergeStates,go:function(v){view=v;render();}};
+cloudInit();
 render();
 })();
 </script>
