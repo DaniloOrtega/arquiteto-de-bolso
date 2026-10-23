@@ -1,2 +1,17 @@
 # Regras do OWASP ZAP: o que fazer com cada tipo de alerta (IGNORE, WARN ou FAIL).
 # Formato: id<TAB>ação<TAB>motivo. Alertas fora desta lista seguem o padrão do ZAP (WARN).
+10035	FAIL	(HSTS: já configurado no _headers, não pode sumir)
+10021	FAIL	(X-Content-Type-Options: já configurado, não pode sumir)
+10020	FAIL	(Anti-iframe (X-Frame-Options): já configurado, não pode sumir)
+10063	FAIL	(Permissions-Policy: já configurado, não pode sumir)
+10019	FAIL	(Content-Type ausente: corrigido para o manifest no _headers)
+10040	FAIL	(Conteúdo misto HTTP dentro de HTTPS)
+10037	FAIL	(Servidor revelando tecnologia no X-Powered-By)
+10038	WARN	(CSP ainda em modo só-relatório; vira FAIL quando a CSP for travada)
+10015	IGNORE	(Cache-Control: site estático e público, sem dado privado em cache)
+10049	IGNORE	(Conteúdo não armazenável: informativo)
+10098	IGNORE	(Access-Control-Allow-Origin * da Cloudflare: conteúdo público, sem cookies nem login no mesmo domínio)
+10109	IGNORE	(Aplicação web moderna: informativo, não é falha)
+2	IGNORE	(IP privado: falso positivo, são exemplos de rede nas questões (10.0.0.0/16 etc.))
+90003	IGNORE	(SRI: o CSS do Google Fonts muda por navegador, não aceita hash fixo)
+90004	IGNORE	(COEP: require-corp quebraria Google Fonts e o login do Firebase)
