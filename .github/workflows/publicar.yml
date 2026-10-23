@@ -14,6 +14,7 @@ concurrency:
 
 jobs:
   testar:
+    name: Testes
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,6 +25,7 @@ jobs:
         run: node tests/check.js
 
   publicar:
+    name: Publicar
     needs: testar
     runs-on: ubuntu-latest
     # PRs vindos de forks não recebem os segredos, então não publicam.
