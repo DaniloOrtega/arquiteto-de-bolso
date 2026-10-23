@@ -351,6 +351,37 @@ body{
 .code{font-weight:900;letter-spacing:.12em;color:var(--accent)}
 .chk{display:flex;gap:10px;align-items:flex-start;font-weight:700}
 .chk input{width:22px;height:22px;margin-top:2px;accent-color:var(--accent)}
+/* ===== v16: sons, voz e questões interativas ===== */
+.qtop .icob{margin-left:2px}
+.icob{flex:none;width:44px;height:44px;min-height:44px;padding:0;display:grid;place-items:center;color:var(--ink-2)}
+.icob .ico{width:22px;height:22px}
+.icob[aria-pressed="false"]{opacity:.6}
+.qrow{display:flex;align-items:flex-start;gap:10px}
+.qrow .qtext{flex:1;min-width:0;margin:0}
+.xtag{font-weight:900;font-size:11px;letter-spacing:.06em;text-transform:uppercase;background:var(--tbg,var(--accent-soft));color:var(--tc,var(--accent));padding:3px 10px;border-radius:99px}
+.xhint{margin:0;color:var(--ink-2);font-weight:700;font-size:14px}
+.xi{display:flex;align-items:center;gap:10px;text-align:left;width:100%;min-height:52px;padding:10px 12px;border:2px solid var(--line);border-bottom-width:4px;border-radius:16px;background:var(--surface);color:var(--ink);font-weight:700;line-height:1.3}
+.xi .t{min-width:0;overflow-wrap:anywhere}
+.xi .n{flex:none;width:26px;height:26px;border-radius:9px;display:grid;place-items:center;font-weight:900;font-size:13px;background:var(--accent);color:#fff}
+.xi:not(:disabled):active{transform:translateY(2px);border-bottom-width:2px}
+.xi.ok{border-color:var(--good);background:var(--good-bg)} .xi.ok .n{background:var(--good)}
+.xi.bad{border-color:var(--bad);background:var(--bad-bg)} .xi.bad .n{background:var(--bad)}
+.xi:disabled{cursor:default;color:var(--ink)}
+.seq{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.slot{display:flex;align-items:center;gap:10px;min-height:52px;padding:10px 12px;border:2px dashed var(--line);border-radius:16px;color:var(--ink-2)}
+.slot .n{width:26px;height:26px;border-radius:9px;display:grid;place-items:center;font-weight:900;font-size:13px;background:var(--off);color:var(--ink-2)}
+.pool{display:flex;flex-wrap:wrap;gap:8px;padding-top:4px;border-top:2px dashed var(--line)}
+.pool .chip2{width:auto;flex:1 1 auto;min-height:48px;margin-top:8px}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mcol{display:flex;flex-direction:column;gap:8px;min-width:0}
+.mi{min-height:64px;font-size:14px;padding:8px 10px}
+.mi.sel{border-color:var(--accent);background:var(--accent-soft)}
+.mi.paired:not(.ok):not(.bad){border-color:color-mix(in srgb,var(--accent) 55%,var(--line))}
+.fbh{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.fbh .icob{width:40px;height:40px;min-height:40px;background:transparent}
+.sol{background:var(--surface);border-radius:14px;padding:10px 12px;font-weight:700;font-size:14px}
+.sol ol,.sol ul{margin:6px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:3px}
+@media (max-width:360px){.mi{font-size:13px;padding:8px}}
 </style>
 
 <main id="app" aria-live="polite"></main>
@@ -2032,6 +2063,317 @@ var QS=RAW.map(function(r){
 });
 var BYID={}; QS.forEach(function(q){BYID[q.id]=q;});
 
+/* ---------- Questões interativas: ordenar e ligar pares ----------
+   Formato: [trilha, nível, tipo, enunciado, itens, explicação, tema]
+   Tipo "o" (ordenar): itens já na ordem certa; a tela embaralha.
+   Tipo "m" (ligar pares): pares [esquerda, direita]; a tela embaralha as duas colunas.
+   Cada lição troca uma questão comum por uma interativa do mesmo nível. */
+var XRAW=[
+["rede",1,"m","Ligue cada serviço de rede à sua função.",
+ [["DNS","Traduz nomes em endereços IP"],["DHCP","Entrega IPs automaticamente"],["NAT","Troca o IP privado pelo público"],["Gateway","Saída para outras redes"]],
+ "DNS é a agenda de nomes, DHCP distribui endereços, NAT permite que vários aparelhos saiam com um único IP público e o gateway é a porta de saída da rede local.","end"],
+["rede",2,"m","Ligue cada protocolo à sua porta padrão.",
+ [["HTTP","80"],["HTTPS","443"],["SSH","22"],["DNS","53"]],
+ "São as portas mais cobradas em regras de firewall. HTTP usa 80, HTTPS 443, SSH 22 e DNS 53 (UDP e TCP).","vlan"],
+["rede",3,"m","Ligue cada bloco CIDR à quantidade de endereços IPv4.",
+ [["/24","256"],["/26","64"],["/28","16"],["/22","1.024"]],
+ "Cada bit a menos na máscara dobra o bloco: /24 = 2^8 = 256, /26 = 2^6 = 64, /28 = 2^4 = 16 e /22 = 2^10 = 1.024. Na nuvem, alguns endereços de cada sub-rede ficam reservados.","end"],
+["rede",4,"o","Ordene o que acontece quando você abre um site HTTPS no navegador, do primeiro ao último passo.",
+ ["Resolver o nome do site no DNS","Abrir a conexão TCP com o servidor","Negociar o TLS (certificado e chaves)","Enviar a requisição HTTP","Receber a resposta e montar a página"],
+ "Primeiro o nome vira IP. Depois vem o aperto de mão TCP, em seguida o TLS cifra o canal, e só então a requisição HTTP trafega com segurança.","dns"],
+
+["arq",1,"m","Ligue cada tipo de armazenamento ao uso mais comum.",
+ [["Bloco","Disco de servidor ou de banco de dados"],["Arquivo","Pasta compartilhada na rede"],["Objeto","Fotos e backups acessados por API"],["Fita","Arquivamento barato de longo prazo"]],
+ "Bloco se comporta como um disco local, arquivo é compartilhado por protocolos como NFS e SMB, objeto é acessado por HTTP e escala muito, e fita ainda é usada para guardar por anos a baixo custo.","sto"],
+["arq",2,"m","Ligue cada nível de RAID à sua característica.",
+ [["RAID 0","Desempenho, sem proteção"],["RAID 1","Espelhamento em dois discos"],["RAID 5","Paridade, aguenta perder 1 disco"],["RAID 10","Espelho combinado com distribuição"]],
+ "RAID 0 só distribui (se um disco falha, perde tudo). RAID 1 espelha. RAID 5 usa paridade e tolera 1 falha. RAID 10 junta espelho e distribuição, com bom desempenho e proteção.","sto"],
+["arq",3,"o","Ordene as camadas de uma aplicação web clássica, do usuário até os dados.",
+ ["WAF (firewall de aplicação)","Balanceador de carga","Servidores de aplicação","Banco de dados"],
+ "O WAF filtra ataques na entrada, o balanceador distribui as requisições entre os servidores de aplicação, e só a camada de aplicação conversa com o banco, que fica protegido no fundo.","red"],
+["arq",4,"o","Ordene os passos de uma migração de servidores para máquinas virtuais (lift and shift).",
+ ["Inventariar servidores e dependências","Dimensionar as VMs de destino","Replicar os dados para o destino","Testar a aplicação no ambiente novo","Fazer a virada (cutover) na janela combinada"],
+ "Sem inventário não se sabe o que depende do quê. O dimensionamento vem antes da réplica, e a virada só acontece depois de testes no ambiente novo.","vir"],
+
+["nuv",1,"m","Ligue cada modelo ao que fica sob a sua responsabilidade.",
+ [["On-premises","Tudo, até o prédio e a energia"],["IaaS","O sistema operacional da VM em diante"],["PaaS","Só o código e os dados da aplicação"],["SaaS","Só o uso e os dados do software pronto"]],
+ "Quanto mais gerenciado o serviço, menos você cuida. Em todos os modelos, porém, os dados e os acessos continuam sendo responsabilidade sua.","mod"],
+["nuv",2,"m","Ligue cada termo da nuvem ao seu significado.",
+ [["Região","Área geográfica com vários datacenters"],["Zona de disponibilidade","Datacenter isolado dentro da região"],["Escala vertical","Aumentar o tamanho da máquina"],["Escala horizontal","Adicionar mais máquinas"]],
+ "Espalhar as máquinas por zonas protege contra a falha de um datacenter. Escalar horizontalmente costuma ser mais resiliente do que só aumentar uma máquina.","dis"],
+["nuv",3,"o","Ordene as etapas de uma jornada de adoção da nuvem.",
+ ["Avaliar o inventário e o caso de negócio","Preparar a landing zone (contas, rede e identidade)","Migrar as cargas de trabalho","Otimizar custo e operação"],
+ "A landing zone é a base segura (contas, rede, identidade e governança) que precisa existir antes das migrações. A otimização é contínua, depois que as cargas estão rodando.","mig"],
+["nuv",4,"m","Ligue cada estratégia de migração (os 6 Rs) à sua descrição.",
+ [["Rehost","Mover a VM como está"],["Replatform","Pequenos ajustes, como usar banco gerenciado"],["Refactor","Reescrever para ser nativo de nuvem"],["Retire","Desligar o que ninguém usa"]],
+ "Rehost é o lift and shift. Replatform troca peças sem reescrever. Refactor muda a arquitetura. Retire elimina sistemas sem uso, o que reduz custo e risco da migração.","mig"],
+
+["rnu",1,"m","Ligue cada componente da rede virtual à sua função.",
+ [["Sub-rede pública","Tem rota para o internet gateway"],["Sub-rede privada","Sem acesso direto vindo da internet"],["NAT gateway","Saída para a internet das sub-redes privadas"],["Internet gateway","Porta da rede virtual para a internet"]],
+ "O que torna uma sub-rede pública é a rota para o internet gateway. Servidores em sub-redes privadas saem pelo NAT, mas não recebem conexões iniciadas de fora.","sub"],
+["rnu",2,"m","Ligue cada controle de tráfego à sua característica.",
+ [["Security group","Regras com estado, na interface da instância"],["Network ACL","Regras sem estado, na sub-rede"],["Tabela de rotas","Define para onde o tráfego vai"],["Endpoint privado","Acesso a serviço da nuvem sem passar pela internet"]],
+ "Com estado significa que a resposta volta liberada sozinha. Na ACL sem estado é preciso liberar a ida e a volta. Endpoints privados mantêm o tráfego dentro da rede do provedor.","sec"],
+["rnu",3,"o","Ordene o caminho de um pacote que sai de uma VM em sub-rede privada para a internet.",
+ ["VM na sub-rede privada","Tabela de rotas da sub-rede privada","NAT gateway na sub-rede pública","Internet gateway","Internet"],
+ "A rota padrão da sub-rede privada aponta para o NAT, que fica na sub-rede pública. O NAT troca o IP de origem e envia o pacote pelo internet gateway.","sub"],
+["rnu",4,"m","Ligue cada opção de conectividade ao seu uso.",
+ [["VPN site-to-site","Túnel criptografado pela internet"],["Link dedicado","Conexão privada com banda garantida"],["Peering de redes","Liga duas redes, sem trânsito para terceiras"],["Transit gateway","Hub central que conecta muitas redes"]],
+ "VPN é rápida de montar e barata. Link dedicado (Direct Connect, ExpressRoute, Interconnect) dá latência estável. Peering não é transitivo, por isso muitas redes pedem um hub de trânsito.","con"],
+
+["seg",1,"m","Ligue cada conceito de acesso ao seu significado.",
+ [["Autenticação","Provar quem você é"],["Autorização","Definir o que você pode fazer"],["MFA","Exigir um segundo fator, como código no celular"],["Privilégio mínimo","Dar só o acesso necessário"]],
+ "Primeiro o sistema confirma a identidade (autenticação), depois decide as permissões (autorização). MFA e privilégio mínimo reduzem o estrago de uma senha vazada.","iam"],
+["seg",2,"m","Ligue cada termo de criptografia ao seu significado.",
+ [["Em trânsito","TLS entre o cliente e o servidor"],["Em repouso","Dados cifrados no disco"],["Hash","Resumo de mão única, usado para senhas"],["KMS","Serviço que guarda e gira as chaves"]],
+ "Criptografia em trânsito e em repouso protegem momentos diferentes do dado. Hash não se desfaz, por isso serve para guardar senhas. O KMS centraliza e audita as chaves.","cri"],
+["seg",3,"o","Ordene as fases da resposta a incidentes, segundo o guia do NIST.",
+ ["Preparação","Detecção e análise","Contenção, erradicação e recuperação","Atividades pós-incidente"],
+ "Sem preparação (contatos, ferramentas e playbooks) não há resposta rápida. O ciclo termina com lições aprendidas, que alimentam uma nova preparação.","inc"],
+["seg",4,"m","Ligue cada ameaça ao controle mais adequado.",
+ [["SQL injection","WAF e consultas parametrizadas"],["DDoS","Proteção anti-DDoS e CDN"],["Credencial vazada","MFA e rotação das chaves"],["Ransomware","Backup imutável e isolado"]],
+ "Cada ameaça pede uma defesa própria. Backup imutável é a última linha contra ransomware, porque o atacante não consegue apagar ou cifrar as cópias.","red"],
+
+["ha",1,"m","Ligue cada sigla ao seu significado.",
+ [["RTO","Tempo máximo para voltar a funcionar"],["RPO","Quanto de dados se aceita perder"],["SLA","Disponibilidade prometida em contrato"],["SPOF","Peça que, se falhar, derruba tudo"]],
+ "RTO mede tempo de parada, RPO mede perda de dados. SLA é o compromisso com o cliente, e eliminar SPOFs é o primeiro passo da alta disponibilidade.","met"],
+["ha",2,"m","Ligue cada disponibilidade ao tempo fora do ar permitido por ano (aproximado).",
+ [["99%","3,65 dias"],["99,9%","8,8 horas"],["99,99%","53 minutos"],["99,999%","5 minutos"]],
+ "Um ano tem 8.760 horas. Cada 9 a mais divide o tempo de parada por 10: 87,6 h, 8,76 h, 52,6 min e 5,26 min.","met"],
+["ha",3,"o","Ordene as estratégias de recuperação de desastre da mais barata (e mais lenta) para a mais cara (e mais rápida).",
+ ["Backup e restauração","Pilot light","Warm standby","Ativo-ativo multirregião"],
+ "No pilot light só o essencial (como o banco replicado) fica ligado. No warm standby roda uma versão reduzida do ambiente. No ativo-ativo, as duas regiões atendem ao mesmo tempo.","dr"],
+["ha",4,"o","Ordene os passos de um failover planejado para outra região.",
+ ["Congelar mudanças e confirmar que a réplica está em dia","Parar as escritas na região primária","Promover o banco réplica na região secundária","Apontar o DNS para a região secundária","Validar a aplicação e comunicar"],
+ "Parar as escritas antes de promover a réplica evita perda de dados e duas regiões escrevendo ao mesmo tempo. O DNS só muda quando o novo primário está pronto.","con"],
+
+["db",1,"m","Ligue cada tipo de banco ao seu uso típico.",
+ [["Relacional","Tabelas, SQL e chaves estrangeiras"],["Documento","JSON flexível, como o MongoDB"],["Chave-valor","Leitura muito rápida por chave, como o Redis"],["Grafo","Relações entre entidades, como redes sociais"]],
+ "Não existe banco melhor para tudo. A escolha depende do formato dos dados e das consultas mais frequentes.","mod"],
+["db",2,"m","Ligue cada letra do ACID ao seu significado.",
+ [["Atomicidade","Tudo ou nada"],["Consistência","Respeita as regras do banco"],["Isolamento","Transações não se atrapalham"],["Durabilidade","O que foi confirmado não se perde"]],
+ "ACID garante que uma transferência bancária, por exemplo, nunca debite de um lado sem creditar do outro, mesmo com falhas ou acessos simultâneos.","tra"],
+["db",3,"o","Ordene os passos de uma migração de banco com pouca parada, usando CDC.",
+ ["Fazer a carga inicial completa no destino","Ligar o CDC para replicar as mudanças","Validar os dados e esperar a réplica ficar em dia","Parar as escritas na origem e virar a aplicação"],
+ "O CDC (captura de dados alterados) leva as mudanças feitas durante e depois da carga inicial. A parada fica restrita aos minutos da virada.","bkp"],
+["db",4,"m","Ligue cada técnica ao problema de desempenho que ela resolve.",
+ [["Índice","Busca lenta em coluna filtrada"],["Réplica de leitura","Primário sobrecarregado por consultas"],["Cache","Mesma consulta repetida muitas vezes"],["Sharding","Dados e escritas além de um só servidor"]],
+ "Comece pelo mais simples (índice e cache). Réplicas aliviam leituras, mas só o sharding distribui também as escritas, com bem mais complexidade.","rep"],
+
+["cont",1,"o","Ordene o ciclo de vida de um container.",
+ ["Escrever o Dockerfile","Construir a imagem (build)","Enviar a imagem ao registry (push)","Executar o container a partir da imagem (run)"],
+ "O Dockerfile é a receita, a imagem é o pacote pronto, o registry é onde ela fica guardada e o container é a imagem em execução.","doc"],
+["cont",2,"m","Ligue cada objeto do Kubernetes à sua função.",
+ [["Pod","Menor unidade, com um ou mais containers"],["Deployment","Mantém N réplicas e faz rolling update"],["Service","Endereço estável para acessar os pods"],["Ingress","Entrada HTTP vinda de fora do cluster"]],
+ "Pods nascem e morrem com IPs novos. O Service dá um endereço fixo, o Deployment garante a quantidade e o Ingress publica rotas HTTP para fora.","k8s"],
+["cont",3,"m","Ligue cada termo de serverless e eventos ao seu significado.",
+ [["Função","Código que roda por evento e cobra por execução"],["Fila","Guarda mensagens até alguém processar"],["Tópico pub/sub","Entrega a mesma mensagem a vários assinantes"],["Cold start","Atraso na primeira execução da função"]],
+ "Filas desacoplam quem produz de quem consome. Tópicos espalham um evento para vários interessados. O cold start pesa em APIs que precisam de baixa latência.","srv"],
+["cont",4,"o","Ordene o que acontece quando você aplica um Deployment novo no Kubernetes.",
+ ["O kubectl envia o manifesto ao API server","O controlador cria o ReplicaSet e os pods","O scheduler escolhe um nó para cada pod","O kubelet do nó baixa a imagem e inicia o container"],
+ "Tudo passa pelo API server. Os controladores criam os objetos, o scheduler decide onde cada pod roda, e o kubelet executa no nó.","k8s"],
+
+["ops",1,"o","Ordene as etapas de uma esteira de CI/CD.",
+ ["Commit no repositório","Build e testes automáticos","Deploy em homologação","Aprovação e deploy em produção"],
+ "A esteira barra o problema o mais cedo possível: se o teste falha, nada segue adiante. Produção recebe só o que já passou por homologação.","cic"],
+["ops",2,"m","Ligue cada estratégia de entrega à sua descrição.",
+ [["Blue/green","Dois ambientes, troca de uma vez"],["Canário","Libera primeiro para poucos usuários"],["Rolling","Troca as instâncias aos poucos"],["Feature flag","Liga e desliga função sem novo deploy"]],
+ "Todas reduzem o risco de publicar. Blue/green permite voltar na hora, o canário mede o impacto em poucos usuários e a feature flag separa o deploy da liberação.","cic"],
+["ops",3,"m","Ligue cada sinal de observabilidade ao que ele mostra.",
+ [["Métricas","Números ao longo do tempo, como CPU"],["Logs","Registros detalhados de eventos"],["Traces","Caminho de uma requisição entre serviços"],["Alerta","Aviso quando algo passa do limite"]],
+ "Métricas mostram que algo está errado, traces mostram onde, e logs mostram o porquê. Alertas bons se baseiam no que o usuário sente, como erros e latência.","obs"],
+["ops",4,"o","Ordene o fluxo de uma mudança de infraestrutura com Terraform.",
+ ["Escrever o código (.tf)","Rodar terraform init","Rodar terraform plan","Revisar o plano no pull request","Rodar terraform apply"],
+ "O init prepara providers e estado, o plan mostra o que vai mudar e o apply executa. Revisar o plano antes evita apagar recursos por engano.","iac"],
+
+["fin",1,"m","Ligue cada modelo de compra à sua característica.",
+ [["Sob demanda","Paga por hora, sem compromisso"],["Instância reservada","Desconto por compromisso de 1 ou 3 anos"],["Spot","Grande desconto, mas pode ser interrompida"],["Savings plan","Desconto por gasto por hora comprometido"]],
+ "Cargas estáveis combinam com reserva ou savings plan. Cargas tolerantes a interrupção, como processamento em lote, aproveitam o spot.","mod"],
+["fin",2,"m","Ligue cada desperdício à ação recomendada.",
+ [["VM ociosa","Desligar ou reduzir o tamanho"],["Disco órfão","Apagar depois de conferir"],["Ambiente de teste à noite","Agendar para desligar"],["Dados frios","Mover para armazenamento mais barato"]],
+ "São as economias mais rápidas do FinOps. Ambientes de teste desligados à noite e nos fins de semana chegam a custar cerca de 65% menos.","otm"],
+["fin",3,"o","Ordene as fases do ciclo FinOps.",
+ ["Informar (visibilidade e rateio)","Otimizar (cortar desperdício)","Operar (governança contínua)"],
+ "Não dá para otimizar o que não se enxerga. Depois de otimizar, a operação mantém as regras, e o ciclo recomeça.","gov"],
+["fin",4,"o","Ordene uma rotina de rateio de custos (showback).",
+ ["Definir a política de etiquetas (tags)","Aplicar as etiquetas nos recursos","Gerar o relatório de custo por etiqueta","Mostrar a cada área quanto ela gastou"],
+ "Sem uma política combinada, cada time etiqueta de um jeito e o relatório não fecha. O showback mostra o gasto; o chargeback, além disso, cobra de cada área.","vis"],
+
+["sw",1,"m","Ligue cada termo de arquitetura de software ao seu significado.",
+ [["Monólito","Uma única aplicação, com um único deploy"],["Microsserviços","Serviços pequenos, com deploy independente"],["API","Contrato para sistemas conversarem"],["Evento","Aviso de que algo aconteceu"]],
+ "Microsserviços dão independência aos times, mas trazem complexidade de rede e de dados. Muitos sistemas começam bem como um monólito organizado.","est"],
+["sw",2,"m","Ligue cada conceito de DDD ao seu significado.",
+ [["Contexto delimitado","Fronteira onde um modelo vale"],["Linguagem ubíqua","Mesmos termos no negócio e no código"],["Agregado","Grupo com uma raiz que garante as regras"],["Evento de domínio","Fato relevante para o negócio"]],
+ "No DDD, a mesma palavra pode ter sentidos diferentes em contextos diferentes (cliente no faturamento e no suporte, por exemplo), e isso orienta onde cortar os serviços.","ddd"],
+["sw",3,"m","Ligue cada padrão de resiliência ao que ele faz.",
+ [["Retry","Tenta de novo após falha temporária"],["Circuit breaker","Para de chamar um serviço que está falhando"],["Timeout","Limita quanto tempo esperar"],["Idempotência","Repetir não muda o resultado"]],
+ "Retry sem idempotência pode cobrar duas vezes. Retry sem circuit breaker pode derrubar de vez um serviço que já estava sofrendo.","res"],
+["sw",4,"o","Ordene uma saga de pedido quando o pagamento falha.",
+ ["Criar o pedido como pendente","Reservar o estoque","Tentar cobrar o pagamento (falha)","Liberar o estoque reservado (compensação)","Cancelar o pedido e avisar o cliente"],
+ "Na saga, cada passo tem uma ação de compensação. Quando um passo falha, os anteriores são desfeitos em ordem inversa, sem transação distribuída.","res"],
+
+["ing",1,"m","Ligue cada termo em inglês à tradução.",
+ [["Outage","Queda do serviço"],["Storage","Armazenamento"],["Network","Rede"],["Pricing","Precificação"]],
+ "Termos que aparecem em quase todo documento de TI. Toque no termo em inglês para ouvir a pronúncia.","ope"],
+["ing",2,"m","Ligue cada expressão em inglês ao significado.",
+ [["Workaround","Solução de contorno"],["Rollback","Voltar à versão anterior"],["Deadline","Prazo final"],["Scope creep","Escopo crescendo sem controle"]],
+ "Workaround é provisório; a correção definitiva é o fix. Scope creep é um dos maiores riscos de projeto e deve ser tratado com controle de mudanças.","prj"],
+["ing",3,"m","Ligue cada expressão de reunião ao significado.",
+ [["Ballpark estimate","Estimativa aproximada"],["Kick-off","Reunião de início"],["By EOD","Até o fim do dia"],["Follow-up","Retorno ou acompanhamento"]],
+ "EOD significa end of day. Ao dar um ballpark, deixe claro que o número ainda será refinado.","com"],
+["ing",4,"o","Ordene as frases para montar um e-mail curto ao cliente.",
+ ["Hi Maria,","Thanks for your time on today's call.","As agreed, we will share the proposal by Friday.","Best regards,"],
+ "Saudação, agradecimento, próximo passo com prazo e despedida. \"As agreed\" (conforme combinado) registra o que foi acordado na reunião.","com"],
+
+["disc",1,"o","Ordene as etapas de uma venda consultiva de solução.",
+ ["Entender o problema do cliente (discovery)","Desenhar a solução","Estimar o custo","Apresentar a proposta"],
+ "Começar pela solução sem entender o problema é o erro mais comum. O discovery define o que vai ser desenhado, estimado e proposto.","req"],
+["disc",2,"m","Ligue cada termo do levantamento ao seu significado.",
+ [["Requisito funcional","O que o sistema faz"],["Requisito não funcional","Qualidade exigida, como desempenho"],["Premissa","Algo assumido como verdade"],["Restrição","Limite imposto, como orçamento ou prazo"]],
+ "Premissas precisam estar escritas na proposta: se uma delas se mostrar falsa, o escopo e o preço podem mudar.","req"],
+["disc",3,"o","Ordene os passos de um dimensionamento (sizing) de servidores.",
+ ["Levantar o uso atual de CPU, memória e disco","Aplicar a margem de crescimento","Escolher os tamanhos de máquina","Estimar o custo mensal"],
+ "Dimensione pelo uso medido, não pelo que está alocado hoje. A margem cobre crescimento e picos, e só então se escolhem os tamanhos e o custo.","siz"],
+["disc",4,"m","Ligue cada termo financeiro ao seu significado.",
+ [["CAPEX","Compra de equipamentos"],["OPEX","Gasto recorrente, como assinatura"],["TCO","Custo total ao longo dos anos"],["ROI","Retorno sobre o investimento"]],
+ "A nuvem troca CAPEX por OPEX. Uma comparação justa usa o TCO de 3 a 5 anos, incluindo energia, pessoas, licenças e espaço.","tco"],
+
+["idd",1,"m","Ligue cada forma de integração à sua descrição.",
+ [["API REST","Pedido e resposta por HTTP"],["Fila","Mensagem processada depois por um consumidor"],["Webhook","Sistema avisa outro por HTTP quando algo acontece"],["Arquivo em lote","Troca periódica de arquivos"]],
+ "Integrações síncronas (REST) esperam a resposta; assíncronas (fila) toleram que o outro lado esteja fora do ar por um tempo.","int"],
+["idd",2,"m","Ligue cada verbo HTTP à sua ação típica.",
+ [["GET","Ler"],["POST","Criar"],["PUT","Substituir"],["DELETE","Remover"]],
+ "GET, PUT e DELETE são idempotentes: repetir a chamada não muda o resultado. POST não é, por isso precisa de cuidado com repetições.","api"],
+["idd",3,"o","Ordene as etapas de um pipeline ETL.",
+ ["Extrair dos sistemas de origem","Transformar (limpar e padronizar)","Carregar no data warehouse","Consultar em relatórios"],
+ "No ETL a transformação acontece antes da carga. No ELT os dados brutos são carregados primeiro e transformados dentro do próprio warehouse.","etl"],
+["idd",4,"m","Ligue cada repositório de dados à sua descrição.",
+ [["Data warehouse","Dados estruturados para BI"],["Data lake","Dados brutos de qualquer formato"],["Lakehouse","Lake com tabelas e transações"],["Data mart","Recorte do warehouse para uma área"]],
+ "O lakehouse tenta unir o custo baixo do lake com a organização do warehouse, usando formatos como Delta Lake e Apache Iceberg.","dw"],
+
+["gov",1,"m","Ligue cada sigla ao seu significado.",
+ [["TOGAF","Framework de arquitetura corporativa"],["LGPD","Lei brasileira de proteção de dados"],["ADR","Registro de decisão de arquitetura"],["ITIL","Boas práticas de gestão de serviços de TI"]],
+ "Siglas comuns em ambientes corporativos. ADRs são simples, mas evitam que a mesma decisão seja discutida de novo a cada ano.","ea"],
+["gov",2,"m","Ligue cada camada da arquitetura corporativa ao que ela descreve.",
+ [["Negócio","Processos e capacidades"],["Dados","Informações e onde elas ficam"],["Aplicação","Sistemas e integrações"],["Tecnologia","Infraestrutura que sustenta tudo"]],
+ "As camadas ajudam a rastrear o impacto: trocar um servidor (tecnologia) afeta quais sistemas, quais dados e quais processos de negócio.","ea"],
+["gov",3,"o","Ordene as primeiras fases do ciclo ADM do TOGAF.",
+ ["Visão da arquitetura (A)","Arquitetura de negócio (B)","Arquitetura de sistemas de informação (C)","Arquitetura de tecnologia (D)"],
+ "O ADM vai do negócio para a tecnologia. Depois de D vêm oportunidades e soluções (E), planejamento da migração (F), governança da implementação (G) e gestão de mudanças (H).","ea"],
+["gov",4,"o","Ordene as seções de um ADR no formato mais usado.",
+ ["Título","Status","Contexto","Decisão","Consequências"],
+ "O contexto explica o problema e as forças em jogo, a decisão diz o que foi escolhido e as consequências registram ganhos e custos, inclusive os negativos.","adr"],
+
+["ia",1,"m","Ligue cada tipo de aprendizado ao seu significado.",
+ [["Supervisionado","Aprende com exemplos rotulados"],["Não supervisionado","Encontra grupos sem rótulos"],["Por reforço","Aprende por tentativa e recompensa"],["IA generativa","Cria texto, imagem ou código novos"]],
+ "Classificar e-mails como spam é supervisionado, segmentar clientes é não supervisionado, e um robô aprendendo a andar usa reforço.","ml"],
+["ia",2,"m","Ligue cada termo de LLM ao seu significado.",
+ [["Token","Pedaço de texto que o modelo processa"],["Prompt","Instrução enviada ao modelo"],["Alucinação","Resposta convincente, mas falsa"],["Janela de contexto","Quanto texto o modelo considera de uma vez"]],
+ "O custo e o limite de um LLM são medidos em tokens. Fornecer fontes no prompt (como no RAG) reduz alucinações.","gen"],
+["ia",3,"o","Ordene as etapas de uma solução de RAG.",
+ ["Dividir os documentos em trechos","Gerar embeddings e guardar no banco vetorial","Buscar os trechos parecidos com a pergunta","Enviar a pergunta e os trechos ao LLM"],
+ "A preparação (trechos e embeddings) é feita antes. Em cada pergunta, a busca vetorial traz o contexto e o LLM responde com base nele.","gen"],
+["ia",4,"o","Ordene o ciclo de vida de um modelo de machine learning.",
+ ["Coletar e preparar os dados","Treinar o modelo","Avaliar com dados de teste","Publicar (deploy) o modelo","Monitorar o desvio (drift)"],
+ "O monitoramento fecha o ciclo: quando os dados reais mudam (drift), o modelo precisa ser treinado de novo.","mlo"],
+
+["esp",1,"m","Liga cada palabra en español con su traducción.",
+ [["Nube","Nuvem"],["Contraseña","Senha"],["Copia de seguridad","Backup"],["Plazo","Prazo"]],
+ "Vocabulário básico de TI em espanhol. Toque na palavra em espanhol para ouvir a pronúncia.","inf"],
+["esp",2,"m","Liga cada término con su traducción.",
+ [["Cortafuegos","Firewall"],["Ancho de banda","Largura de banda"],["Caída del servicio","Queda do serviço"],["Escalar el incidente","Levar a um nível acima"]],
+ "\"Escalar\" um incidente é encaminhá-lo a um nível de suporte ou de gestão superior, como em português.","inc"],
+["esp",3,"m","Liga cada término de una propuesta con su traducción.",
+ [["Presupuesto","Orçamento"],["Alcance","Escopo"],["Plazo de entrega","Prazo de entrega"],["Pago por uso","Pagamento pelo consumo"]],
+ "\"Presupuesto\" é orçamento (falso amigo de pressuposto). \"Alcance\" é o escopo do projeto.","rep"],
+["esp",4,"o","Ordena las etapas de la respuesta a un incidente.",
+ ["Detectar el incidente","Contener el impacto","Restablecer el servicio","Redactar el informe posterior al incidente"],
+ "Detectar, conter, restabelecer e documentar. O \"informe posterior al incidente\" é o postmortem, com causa raiz e ações corretivas.","inc"]
+];
+
+XRAW.forEach(function(r){
+  var k=r[0]+r[1]+r[2]; counters[k]=(counters[k]||0)+1;
+  var q={id:r[0]+r[1]+"-"+r[2]+counters[k],t:r[0],l:r[1],type:r[2]==="o"?"order":"match",q:r[3],e:r[5],k:r[6],boss:false};
+  if(q.type==="order")q.items=r[4]; else q.pairs=r[4];
+  QS.push(q); BYID[q.id]=q;
+});
+
+/* ---------- Sons e voz ----------
+   Sons gerados pelo navegador (sem arquivos). Leitura em voz alta pela voz do próprio aparelho. */
+var PREF_KEY="arquiteto-de-bolso.prefs", prefs={sound:true};
+try{var pr0=JSON.parse(localStorage.getItem(PREF_KEY)||"{}"); if(pr0&&typeof pr0.sound==="boolean")prefs.sound=pr0.sound;}catch(e){}
+function savePrefs(){try{localStorage.setItem(PREF_KEY,JSON.stringify(prefs));}catch(e){}}
+var AC=null;
+var SFX={
+  ok:[{f:660,t:0,d:.12},{f:990,t:.1,d:.24}],
+  bad:[{f:233,t:0,d:.16,w:"triangle",f2:180},{f:175,t:.15,d:.28,w:"triangle",f2:120}],
+  tap:[{f:600,t:0,d:.05,v:.06}],
+  win:[{f:523,t:0,d:.14},{f:659,t:.12,d:.14},{f:784,t:.24,d:.14},{f:1047,t:.36,d:.45}],
+  lose:[{f:392,t:0,d:.18,w:"triangle"},{f:330,t:.16,d:.32,w:"triangle"}]
+};
+function sfx(n){
+  if(!prefs.sound)return;
+  try{
+    var Ctx=window.AudioContext||window.webkitAudioContext; if(!Ctx)return;
+    AC=AC||new Ctx(); if(AC.state==="suspended")AC.resume();
+    var t0=AC.currentTime+0.01;
+    SFX[n].forEach(function(s){
+      var o=AC.createOscillator(), g=AC.createGain(), a=t0+s.t;
+      o.type=s.w||"sine"; o.frequency.setValueAtTime(s.f,a); if(s.f2)o.frequency.exponentialRampToValueAtTime(s.f2,a+s.d);
+      g.gain.setValueAtTime(0.0001,a); g.gain.exponentialRampToValueAtTime(s.v||0.16,a+0.015); g.gain.exponentialRampToValueAtTime(0.0001,a+s.d);
+      o.connect(g); g.connect(AC.destination); o.start(a); o.stop(a+s.d+0.03);
+    });
+  }catch(e){}
+  if(n==="bad"&&navigator.vibrate){try{navigator.vibrate(90);}catch(e){}}
+}
+var TTS=("speechSynthesis" in window)&&typeof SpeechSynthesisUtterance!=="undefined";
+var FL={ing:"en-US",esp:"es-ES"};
+if(TTS){try{speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged=function(){};}catch(e){TTS=false;}}
+function voiceFor(lang){
+  var vs=[]; try{vs=speechSynthesis.getVoices()||[];}catch(e){}
+  var L=lang.toLowerCase(), p=L.slice(0,2), best=null;
+  vs.forEach(function(v){var vl=String(v.lang||"").replace("_","-").toLowerCase(); if(vl===L&&!best)best=v;});
+  if(!best)vs.forEach(function(v){var vl=String(v.lang||"").toLowerCase(); if(vl.slice(0,2)===p&&!best)best=v;});
+  return best;
+}
+function stopVoice(){if(TTS){try{speechSynthesis.cancel();}catch(e){}}}
+function say(parts){
+  if(!TTS)return;
+  stopVoice();
+  parts.forEach(function(p){
+    var x=String(p.x||"").trim(); if(!x)return;
+    var u=new SpeechSynthesisUtterance(x); u.lang=p.l; var v=voiceFor(p.l); if(v)u.voice=v; u.rate=p.l==="pt-BR"?1.05:0.9;
+    try{speechSynthesis.speak(u);}catch(e){}
+  });
+}
+/* Divide o enunciado em trechos: em inglês, o que está entre aspas (ou o termo depois de "significa") vai na voz em inglês. */
+function qParts(q,t){
+  if(t==="esp")return [{x:q,l:FL.esp}];
+  if(t!=="ing")return [{x:q,l:"pt-BR"}];
+  if(q.indexOf('"')<0){
+    var mm=q.match(/^(.*?significa )(.+?)( em .*|)\?$/);
+    return mm?[{x:mm[1],l:"pt-BR"},{x:mm[2],l:FL.ing},{x:mm[3],l:"pt-BR"}]:[{x:q,l:"pt-BR"}];
+  }
+  var out=[], re=/"([^"]+)"/g, last=0, m;
+  while((m=re.exec(q))){out.push({x:q.slice(last,m.index),l:"pt-BR"}); out.push({x:m[1],l:FL.ing}); last=re.lastIndex;}
+  out.push({x:q.slice(last),l:"pt-BR"}); return out;
+}
+function speakQ(){
+  var s=sess; if(!s||!s.cur)return;
+  try{if(speechSynthesis.speaking){stopVoice();return;}}catch(e){}
+  var q=s.cur, fl=FL[q.t]||"pt-BR", parts=qParts(q.q,q.t);
+  if(q.type==="order")s.pool.concat(s.ans).sort(function(a,b){return a-b;}).forEach(function(i){parts.push({x:q.items[i],l:fl});});
+  else if(q.type==="match"){s.L.forEach(function(i){parts.push({x:q.pairs[i][0],l:fl});}); s.R.forEach(function(i){parts.push({x:q.pairs[i][1],l:"pt-BR"});});}
+  else s.opts.forEach(function(o,i){parts.push({x:"ABCD".charAt(i)+".",l:"pt-BR"}); parts.push({x:o.t,l:"pt-BR"});});
+  say(parts);
+}
+function speakE(){
+  var s=sess; if(!s||!s.cur)return;
+  try{if(speechSynthesis.speaking){stopVoice();return;}}catch(e){}
+  say([{x:s.cur.e,l:"pt-BR"}]);
+}
+function speakTerm(x,t){ if(FL[t])say([{x:x,l:FL[t]}]); }
+
 /* ---------- Estado e armazenamento ---------- */
 var KEY="arquiteto-de-bolso.v2", OLD_KEY="arquiteto-de-bolso.v1";
 function defaults(){var p={};TRAIL_ORDER.forEach(function(t){p[t]={};});return {xp:0,streak:0,last:null,day:null,dayXp:0,placed:{},prog:p,review:{},stats:{},wk:{k:"",xp:0}};}
@@ -2096,7 +2438,9 @@ function newSess(mode,extra){
 }
 function startLesson(t,l){
   var group=QS.filter(function(q){return q.t===t&&q.l===l;});
-  var body=shuffle(group.filter(function(q){return !q.boss;}));
+  var plain=shuffle(group.filter(function(q){return !q.boss&&!q.type;}));
+  var xs=shuffle(group.filter(function(q){return q.type;})).slice(0,2);
+  var body=shuffle(plain.slice(0,Math.max(0,plain.length-xs.length)).concat(xs));
   var boss=group.filter(function(q){return q.boss;});
   var qs=body.concat(boss);
   sess=newSess("lesson",{t:t,l:l,qs:qs,total:qs.length});
@@ -2132,13 +2476,29 @@ function pickPlacement(t){
 function loadQ(){
   var s=sess;
   s.cur=(s.mode==="placement")?pickPlacement(s.seq[s.i]):s.qs[s.i];
-  s.opts=shuffle(s.cur.o.map(function(t,k){return {t:t,ok:k===0};}));
-  s.locked=false; s.pick=null; s.gain=0;
+  var q=s.cur; s.opts=[]; s.pool=[]; s.ans=[]; s.L=[]; s.R=[]; s.m={}; s.sel=null;
+  if(q.type==="order"){
+    var idx=q.items.map(function(x,k){return k;}), p=idx;
+    for(var tries=0;tries<10&&p.join()===idx.join();tries++)p=shuffle(idx);
+    s.pool=p;
+  }else if(q.type==="match"){
+    var ix=q.pairs.map(function(x,k){return k;}); s.L=shuffle(ix); s.R=shuffle(ix);
+    for(var tr=0;tr<10&&s.R.join()===s.L.join();tr++)s.R=shuffle(ix);
+  }else s.opts=shuffle(q.o.map(function(t,k){return {t:t,ok:k===0};}));
+  s.locked=false; s.pick=null; s.ok=false; s.gain=0; stopVoice();
   render(); window.scrollTo(0,0);
 }
 function pick(i){
-  var s=sess; if(s.locked)return; s.locked=true; s.pick=i;
-  var ok=s.opts[i].ok, q=s.cur, gain=0;
+  var s=sess; if(s.locked||!s.opts[i])return; s.pick=i; grade(s.opts[i].ok);
+}
+function checkX(){
+  var s=sess, q=s.cur; if(s.locked)return;
+  if(q.type==="order"){ if(s.pool.length)return; grade(s.ans.every(function(v,k){return v===k;})); }
+  else if(q.type==="match"){ if(Object.keys(s.m).length<q.pairs.length)return; grade(q.pairs.every(function(x,k){return s.m[k]===k;})); }
+}
+function grade(ok){
+  var s=sess; if(s.locked)return; s.locked=true; s.ok=ok; stopVoice(); sfx(ok?"ok":"bad");
+  var q=s.cur, gain=0;
   if(ok){s.right++; gain=(s.mode==="lesson")?(q.boss?20:10):5;}
   s.xpGain+=gain; s.gain=gain;
   if(gain)addXP(gain); else touchDay();
@@ -2155,8 +2515,30 @@ function pick(i){
   }
   save(); s.held=false; render();
   var fbn=document.getElementById("fb");
-  if(fbn){var lim=fbn.getBoundingClientRect().top-12, mb=0; [].forEach.call(document.querySelectorAll(".opt.ok,.opt.bad"),function(o){mb=Math.max(mb,o.getBoundingClientRect().bottom);}); if(mb>lim)window.scrollBy({top:mb-lim,behavior:"smooth"});}
+  if(fbn){var lim=fbn.getBoundingClientRect().top-12, mb=0; [].forEach.call(document.querySelectorAll(".opt.ok,.opt.bad,.xi.ok,.xi.bad"),function(o){mb=Math.max(mb,o.getBoundingClientRect().bottom);}); if(mb>lim)window.scrollBy({top:mb-lim,behavior:"smooth"});}
   if(ok){ s.timer=setTimeout(function(){ if(sess===s&&view==="quiz"&&s.locked&&!s.held)next(); },AUTO_MS); }
+}
+function ordTap(i,add){
+  var s=sess; if(!s||s.locked)return;
+  if(add){var p=s.pool.indexOf(i); if(p<0)return; s.pool.splice(p,1); s.ans.push(i); speakTerm(s.cur.items[i],s.cur.t);}
+  else{var a=s.ans.indexOf(i); if(a<0)return; s.ans.splice(a,1); s.pool.push(i);}
+  sfx("tap"); render();
+}
+function leftOf(r){var s=sess; for(var k in s.m){if(s.m[k]===r)return Number(k);} return -1;}
+function mTap(side,i){
+  var s=sess; if(!s||s.locked)return;
+  if(side==="L"){
+    speakTerm(s.cur.pairs[i][0],s.cur.t);
+    if(s.m[i]!==undefined){delete s.m[i]; s.sel={side:"L",i:i};}
+    else if(s.sel&&s.sel.side==="R"){s.m[i]=s.sel.i; s.sel=null;}
+    else s.sel=(s.sel&&s.sel.side==="L"&&s.sel.i===i)?null:{side:"L",i:i};
+  }else{
+    var l=leftOf(i);
+    if(l>=0){delete s.m[l]; s.sel={side:"R",i:i};}
+    else if(s.sel&&s.sel.side==="L"){s.m[s.sel.i]=i; s.sel=null;}
+    else s.sel=(s.sel&&s.sel.side==="R"&&s.sel.i===i)?null:{side:"R",i:i};
+  }
+  sfx("tap"); render();
 }
 function next(){
   var s=sess; if(s.timer){clearTimeout(s.timer);s.timer=null;} s.i++;
@@ -2175,7 +2557,7 @@ function finish(){
     if(s.all){r.all=true; r.levels=GEN_ORDER.map(function(t){var lv=Math.min(3,s.ptr[t]); state.placed[t]=lv; return [t,lv];});}
     else{state.placed[s.t]=s.ptr[s.t]; r.t=s.t; r.level=s.ptr[s.t];}
   }
-  save(); res=r; view="result"; render(); window.scrollTo(0,0);
+  save(); res=r; view="result"; stopVoice(); sfx((r.mode==="lesson"&&!r.pass)?"lose":"win"); render(); window.scrollTo(0,0);
 }
 
 
@@ -2250,6 +2632,9 @@ var ICONS={
  check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
  lock:'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>',
  chev:'<path d="M6 9l6 6 6-6"/>',
+ vol:'<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4.5 4.5 0 010 6M18 6.5a8 8 0 010 11"/>',
+ mute:'<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/>',
+ speak:'<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4.5 4.5 0 010 6"/><path d="M18 6.5a8 8 0 010 11"/>',
  star:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>'
 };
 function ico(n,c){return '<svg class="ico'+(c?' '+c:'')+'" viewBox="0 0 24 24" aria-hidden="true">'+ICONS[n]+'</svg>';}
@@ -2317,30 +2702,75 @@ function renderHome(){
   h+='<footer class="foot"><p>Material de estudo independente, sem vínculo com AWS, Microsoft, Oracle ou outro fornecedor. As questões são originais e foram escritas a partir de conceitos de arquitetura; não são questões de prova. Confira detalhes na documentação oficial antes de usá-los em decisões reais.</p>'+
      '<p>O progresso fica salvo neste aparelho'+(CLOUD_OK?' (e na nuvem, se você entrar com o Google)':'')+'. Para guardar uma cópia ou levar para outro aparelho, use o backup.</p>'+
      (showBackup?'<textarea id="bk" class="bk" rows="4" aria-label="Código de backup"></textarea><div class="row"><button class="secondary" data-act="bk-copy">Copiar código</button><button class="secondary" data-act="bk-restore">Restaurar deste texto</button></div>':'<button class="linkbtn" data-act="bk-open">Backup do progresso</button>')+
+     '<button class="linkbtn" data-act="snd">'+(prefs.sound?'Sons: ligados (toque para desligar)':'Sons: desligados (toque para ligar)')+'</button>'+
      '<button class="linkbtn" data-act="placement-all">Refazer o nivelamento geral</button>'+(confirmReset?'<div class="row"><button class="secondary" data-act="reset-yes">Confirmar: apagar progresso</button><button class="secondary" data-act="reset-no">Cancelar</button></div>'
                   :'<button class="linkbtn" data-act="reset">Apagar meu progresso</button>')+'</footer>';
   app.innerHTML=h;
   var bk=document.getElementById("bk"); if(bk)bk.value=bkText;
 }
 
+function xBody(s,q,answered){
+  var h='', fl=FL[q.t];
+  if(q.type==="order"){
+    h+='<p class="xhint">'+(answered?'Sua ordem:':'Toque nos itens na ordem certa. Toque de novo para tirar.')+'</p><ol class="seq">';
+    s.ans.forEach(function(i,pos){
+      var cls="xi placed"+(answered?(i===pos?" ok":" bad"):"");
+      h+='<li><button class="'+cls+'" data-act="ord-del" data-i="'+i+'"'+(answered?' disabled':'')+'><span class="n">'+(pos+1)+'</span><span class="t">'+esc(q.items[i])+'</span></button></li>';
+    });
+    for(var k=s.ans.length;k<q.items.length;k++)h+='<li><span class="slot"><span class="n">'+(k+1)+'</span></span></li>';
+    h+='</ol>';
+    if(s.pool.length)h+='<div class="pool">'+s.pool.map(function(i){return '<button class="xi chip2" data-act="ord-add" data-i="'+i+'">'+esc(q.items[i])+'</button>';}).join('')+'</div>';
+    if(!answered)h+='<button class="primary" data-act="check"'+(s.pool.length?' disabled':'')+'>Verificar</button>';
+  }else{
+    var num={}; s.L.forEach(function(li,pos){num[li]=pos+1;});
+    h+='<p class="xhint">'+(answered?'Seus pares:':'Toque em um item de cada coluna para formar o par. Toque de novo para desfazer.')+(fl&&!answered?' Toque no termo da esquerda para ouvir.':'')+'</p><div class="mgrid"><div class="mcol">';
+    s.L.forEach(function(li){
+      var paired=s.m[li]!==undefined, sel=s.sel&&s.sel.side==="L"&&s.sel.i===li;
+      var cls="xi mi"+(paired?" paired":"")+(sel?" sel":"")+(answered?(s.m[li]===li?" ok":" bad"):"");
+      h+='<button class="'+cls+'" data-act="m-pick" data-s="L" data-i="'+li+'"'+(answered?' disabled':'')+(fl?' lang="'+fl+'"':'')+'>'+(paired?'<span class="n">'+num[li]+'</span>':'')+'<span class="t">'+esc(q.pairs[li][0])+'</span></button>';
+    });
+    h+='</div><div class="mcol">';
+    s.R.forEach(function(ri){
+      var l=leftOf(ri), sel=s.sel&&s.sel.side==="R"&&s.sel.i===ri;
+      var cls="xi mi"+(l>=0?" paired":"")+(sel?" sel":"")+(answered&&l>=0?(l===ri?" ok":" bad"):"");
+      h+='<button class="'+cls+'" data-act="m-pick" data-s="R" data-i="'+ri+'"'+(answered?' disabled':'')+'>'+(l>=0?'<span class="n">'+num[l]+'</span>':'')+'<span class="t">'+esc(q.pairs[ri][1])+'</span></button>';
+    });
+    h+='</div></div>';
+    if(!answered)h+='<button class="primary" data-act="check"'+(Object.keys(s.m).length<q.pairs.length?' disabled':'')+'>Verificar</button>';
+  }
+  return h;
+}
+function xSolution(q){
+  if(q.type==="order")return '<div class="sol"><span class="label">Ordem certa</span><ol>'+q.items.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ol></div>';
+  return '<div class="sol"><span class="label">Pares certos</span><ul>'+q.pairs.map(function(p){return '<li><b>'+esc(p[0])+'</b> → '+esc(p[1])+'</li>';}).join('')+'</ul></div>';
+}
 function renderQuiz(){
   var s=sess, q=s.cur, T=TRAILS[q.t], answered=s.locked;
   var label=s.mode==="placement"?(s.all?"Nivelamento geral · ":"Nivelamento · ")+T.name:(s.mode==="review"?(s.train?"Treino · "+TEMAS[s.train.t][s.train.k].n:"Revisão"):T.name+" · "+LEVELS[q.l]);
   var pct=Math.round((s.i+(answered?1:0))/s.total*100);
-  var h='<div class="qtop tc" style="--h:'+HUES[q.t]+'"><button class="ghost" data-act="home">Sair</button><div class="track"><i style="width:'+pct+'%"></i></div><span class="count">'+(s.i+1)+'/'+s.total+'</span></div>';
-  h+='<section class="card qcard"><div class="qmeta"><span class="label">'+esc(label)+'</span>'+(s.mode==="lesson"&&q.boss?'<span class="boss">Questão-chefe · XP em dobro</span>':'')+'</div>';
-  h+='<p class="qtext">'+esc(q.q)+'</p><div class="opts">';
-  s.opts.forEach(function(o,i){
-    var cls="opt", dis="";
-    if(answered){dis=" disabled"; if(o.ok)cls+=" ok"; else if(i===s.pick)cls+=" bad";}
-    h+='<button class="'+cls+'" data-act="pick" data-i="'+i+'"'+dis+'><span class="k">'+"ABCD".charAt(i)+'</span><span class="t">'+esc(o.t)+'</span></button>';
-  });
-  h+='</div>';
+  var h='<div class="qtop tc" style="--h:'+HUES[q.t]+'"><button class="ghost" data-act="home">Sair</button><div class="track"><i style="width:'+pct+'%"></i></div><span class="count">'+(s.i+1)+'/'+s.total+'</span>'+
+    '<button class="ghost icob" data-act="snd" aria-pressed="'+(prefs.sound?"true":"false")+'" aria-label="'+(prefs.sound?"Desligar os sons":"Ligar os sons")+'" title="'+(prefs.sound?"Sons ligados":"Sons desligados")+'">'+ico(prefs.sound?"vol":"mute","sm")+'</button></div>';
+  h+='<section class="card qcard"><div class="qmeta"><span class="label">'+esc(label)+'</span>'+
+    (q.type?'<span class="xtag">'+(q.type==="order"?"Ordene":"Ligue os pares")+'</span>':'')+
+    (s.mode==="lesson"&&q.boss?'<span class="boss">Questão-chefe · XP em dobro</span>':'')+'</div>';
+  h+='<div class="qrow"><p class="qtext">'+esc(q.q)+'</p>'+(TTS?'<button class="ghost icob" data-act="speak" aria-label="Ouvir a pergunta" title="Ouvir a pergunta">'+ico("speak","sm")+'</button>':'')+'</div>';
+  if(q.type){h+=xBody(s,q,answered);}
+  else{
+    h+='<div class="opts">';
+    s.opts.forEach(function(o,i){
+      var cls="opt", dis="";
+      if(answered){dis=" disabled"; if(o.ok)cls+=" ok"; else if(i===s.pick)cls+=" bad";}
+      h+='<button class="'+cls+'" data-act="pick" data-i="'+i+'"'+dis+'><span class="k">'+"ABCD".charAt(i)+'</span><span class="t">'+esc(o.t)+'</span></button>';
+    });
+    h+='</div>';
+  }
   h+='</section>';
   if(answered){
-    var ok=s.opts[s.pick].ok, auto=ok&&!s.held;
+    var ok=s.ok, auto=ok&&!s.held;
     h+='<div class="fb sheet '+(ok?"good":"bad")+'" id="fb">'+(auto?'<span class="cd" style="animation-duration:'+AUTO_MS+'ms"></span>':'')+
-       '<b>'+(ok?"Correto!"+(s.gain?" +"+s.gain+" XP":""):"Não foi dessa vez.")+'</b><p data-act="hold">'+esc(q.e)+'</p>'+
+       '<div class="fbh"><b>'+(ok?"Correto!"+(s.gain?" +"+s.gain+" XP":""):"Não foi dessa vez.")+'</b>'+(TTS?'<button class="ghost icob" data-act="speak-e" aria-label="Ouvir a explicação" title="Ouvir a explicação">'+ico("speak","sm")+'</button>':'')+'</div>'+
+       (!ok&&q.type?xSolution(q):'')+
+       '<p data-act="hold">'+esc(q.e)+'</p>'+
        (ok?(auto?'<p class="hint">Avança sozinho. Toque no texto para pausar e ler com calma.</p>':''):'<p class="hint">Esta questão vai para a sua revisão de erros.</p>')+
        '<button class="primary" data-act="next">'+(s.i+1>=s.total?"Ver resultado":"Continuar")+'</button></div>';
   }
@@ -2388,7 +2818,7 @@ app.addEventListener("change",function(e){var t=e.target; if(t&&t.getAttribute&&
 app.addEventListener("click",function(e){
   var b=e.target.closest("[data-act]"); if(!b||b.disabled)return;
   var a=b.getAttribute("data-act");
-  if(a==="home"){view="home";sess=null;confirmReset=false;showBackup=false;render();window.scrollTo(0,0);}
+  if(a==="home"){stopVoice();if(sess&&sess.timer)clearTimeout(sess.timer);view="home";sess=null;confirmReset=false;showBackup=false;render();window.scrollTo(0,0);}
   else if(a==="cloud-login")cloudLogin();
   else if(a==="cloud-logout")cloudLogout();
   else if(a==="rank-open"){view="rank";render();window.scrollTo(0,0);if(C.profile.nick)loadRank();}
@@ -2414,6 +2844,13 @@ app.addEventListener("click",function(e){
     startLesson(t,l);
   }
   else if(a==="pick")pick(Number(b.getAttribute("data-i")));
+  else if(a==="check")checkX();
+  else if(a==="ord-add")ordTap(Number(b.getAttribute("data-i")),true);
+  else if(a==="ord-del")ordTap(Number(b.getAttribute("data-i")),false);
+  else if(a==="m-pick")mTap(b.getAttribute("data-s"),Number(b.getAttribute("data-i")));
+  else if(a==="speak")speakQ();
+  else if(a==="speak-e"){var s1=sess; if(s1&&s1.timer){clearTimeout(s1.timer);s1.timer=null;s1.held=true;var cd1=document.querySelector("#fb .cd");if(cd1)cd1.remove();var hn1=document.querySelector("#fb .hint");if(hn1)hn1.remove();} speakE();}
+  else if(a==="snd"){prefs.sound=!prefs.sound; savePrefs(); if(prefs.sound)sfx("tap"); render(); toast(prefs.sound?"Sons ligados.":"Sons desligados.");}
   else if(a==="next")next();
   else if(a==="bk-open"){showBackup=true;bkText=backupCode();render();var t1=document.getElementById("bk");if(t1&&t1.scrollIntoView)t1.scrollIntoView({block:"center"});}
   else if(a==="bk-copy"){
@@ -2434,7 +2871,7 @@ app.addEventListener("click",function(e){
 
 /* ---------- Nuvem: login, sincronização e ranking (Firebase) ---------- */
 var FB_CFG={apiKey:"AIzaSyCRziWwFP9s4tSJ8440ZKzF17NGkhIxk6c",authDomain:"arquiteto-de-bolso-83ac0.firebaseapp.com",projectId:"arquiteto-de-bolso-83ac0",storageBucket:"arquiteto-de-bolso-83ac0.firebasestorage.app",messagingSenderId:"326711119792",appId:"1:326711119792:web:9a7df05e96e2598a20d075"};
-var CLOUD_OK=/(^|\.)github\.io$/.test(location.hostname)||location.hostname==="localhost"||location.hostname==="127.0.0.1";
+var CLOUD_OK=/(^|\.)(github\.io|pages\.dev)$/.test(location.hostname)||location.hostname==="localhost"||location.hostname==="127.0.0.1";
 var C={ready:false,user:null,fauth:null,fdb:null,profile:{nick:"",groups:[],global:false},busy:false,tab:"week",scope:"global",rank:null,rankLoading:false,sync:"",pushT:null,loaded:false};
 function weekKey(d){d=d||new Date();var x=new Date(d.getFullYear(),d.getMonth(),d.getDate());var dow=(x.getDay()+6)%7;x.setDate(x.getDate()-dow);return dkey(x);}
 function weekXpNow(){return (state.wk&&state.wk.k===weekKey())?state.wk.xp:0;}
