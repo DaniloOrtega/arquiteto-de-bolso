@@ -380,8 +380,28 @@ body{
 .fbh{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .fbh .icob{width:40px;height:40px;min-height:40px;background:transparent}
 .sol{background:var(--surface);border-radius:14px;padding:10px 12px;font-weight:700;font-size:14px}
+.fb .sol b{font-family:inherit;font-size:inherit;font-weight:900;color:var(--ink)}
 .sol ol,.sol ul{margin:6px 0 0;padding-left:20px;display:flex;flex-direction:column;gap:3px}
 @media (max-width:360px){.mi{font-size:13px;padding:8px}}
+/* ===== v17: construtor de arquitetura e escolha de voz ===== */
+.arch{display:flex;flex-direction:column;gap:0}
+.ag{border:2px dashed var(--line);border-radius:18px;padding:12px 10px 10px;display:flex;flex-direction:column;gap:8px;position:relative}
+.agl{font-weight:900;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--tc,var(--accent))}
+.aflow{display:flex;justify-content:center;height:22px}
+.aflow i{display:block;width:3px;height:100%;background:var(--line);position:relative}
+.aflow i::after{content:"";position:absolute;left:50%;bottom:-2px;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--line);border-bottom:0}
+.bslot{flex-direction:column;align-items:flex-start;gap:2px;min-height:60px;border-style:dashed}
+.bslot small{font-size:12px;font-weight:700;color:var(--ink-2);line-height:1.25}
+.bslot em{font-style:normal;color:var(--ink-2);font-weight:600}
+.bslot.filled{border-style:solid}
+.bslot.sel{border-color:var(--accent);background:var(--accent-soft);border-style:solid}
+.bslot.ok,.bslot.bad{border-style:solid}
+.vrow{display:flex;flex-direction:column;gap:6px}
+.vrow .row2{display:flex;gap:8px;align-items:center}
+.vsel{flex:1;min-width:0;appearance:auto}
+.vrow input[type=range]{width:100%;accent-color:var(--accent)}
+.tips{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px;font-weight:600;font-size:14px}
+.vlink{align-self:center;font-size:13px;padding:4px 0;min-height:36px}
 </style>
 
 <main id="app" aria-live="polite"></main>
@@ -2291,6 +2311,176 @@ var XRAW=[
  "Detectar, conter, restabelecer e documentar. O \"informe posterior al incidente\" é o postmortem, com causa raiz e ações corretivas.","inc"]
 ];
 
+/* ---------- Construtor de arquitetura ----------
+   Formato: [trilha, nível, enunciado, blocos, distratores, explicação, tema]
+   blocos: [["Nome do bloco", [["o que a peça faz", "peça certa"], ...]], ...] na ordem do fluxo.
+   distratores: peças erradas que aparecem junto com as certas. */
+var BRAW=[
+["rede",3,"Monte a rede de um escritório pequeno com acesso à internet.",
+ [["Borda",[["Liga o escritório ao provedor","Roteador"],["Filtra o tráfego que entra e sai","Firewall"]]],
+  ["Rede local",[["Conecta os computadores por cabo","Switch"],["Entrega IP aos aparelhos","Servidor DHCP"]]]],
+ ["Balanceador de carga","Data warehouse"],
+ "O roteador fala com o provedor, o firewall decide o que passa, o switch liga os aparelhos da rede local e o DHCP distribui os endereços. Balanceador e data warehouse resolvem outros problemas.","vlan"],
+["rede",4,"Monte o acesso de uma filial ao datacenter por VPN.",
+ [["Filial",[["Rede dos usuários da filial","VLAN de usuários"],["Cifra o tráfego até a matriz","Gateway VPN da filial"]]],
+  ["Internet",[["Leva os dados protegidos","Túnel IPsec"]]],
+  ["Datacenter",[["Recebe o túnel na matriz","Concentrador VPN"],["Libera só as portas necessárias","Firewall interno"]]]],
+ ["Servidor DHCP público","CDN"],
+ "O túnel IPsec liga os dois gateways pela internet. Mesmo dentro do túnel, o firewall interno limita o que a filial alcança no datacenter.","diag"],
+
+["arq",3,"Monte uma aplicação web em 3 camadas com alta disponibilidade.",
+ [["Entrada",[["Distribui as requisições","Balanceador de carga"]]],
+  ["Aplicação",[["Roda o sistema sem ponto único de falha","2 ou mais servidores de aplicação"]]],
+  ["Dados",[["Banco que recebe as escritas","Banco primário"],["Cópia pronta para assumir","Réplica síncrona"]]],
+  ["Proteção",[["Cópia fora do ambiente","Backup em outro local"]]]],
+ ["Pendrive no servidor","RAID 0"],
+ "Cada camada tem redundância: vários servidores atrás do balanceador e um banco com réplica. O backup externo protege contra erro humano e ransomware, que a réplica copiaria junto.","red"],
+["arq",4,"Monte um cluster de virtualização que aguenta a falha de um host.",
+ [["Hosts",[["Executa as VMs","Cluster de hypervisors"],["Move VMs sem desligar","Migração ao vivo"]]],
+  ["Armazenamento",[["Disco compartilhado pelos hosts","SAN (storage em bloco)"],["Protege contra falha de disco","RAID 10"]]],
+  ["Rede",[["Isola o tráfego de disco","Rede dedicada de storage"]]]],
+ ["Disco local sem redundância","RAID 0"],
+ "Com o disco das VMs na SAN, qualquer host do cluster consegue ligá-las se outro falhar. A rede de storage separada evita que o tráfego dos usuários dispute banda com o disco.","vir"],
+
+["nuv",3,"Monte uma aplicação web na nuvem que cresce sozinha.",
+ [["Borda",[["Entrega conteúdo estático perto do usuário","CDN"],["Distribui as requisições entre zonas","Balanceador de carga"]]],
+  ["Computação",[["Liga e desliga servidores conforme a carga","Autoescala em 2 zonas"]]],
+  ["Dados",[["Banco com failover automático","Banco gerenciado multizona"],["Fotos e arquivos dos usuários","Armazenamento de objetos"]]]],
+ ["Servidor único grande","Disco local da VM"],
+ "Servidores sem estado em autoescala crescem e encolhem com a demanda. Por isso os arquivos ficam no armazenamento de objetos e não no disco da VM, que some quando ela é desligada.","esc"],
+["nuv",4,"Monte a base (landing zone) de uma empresa que vai migrar para a nuvem.",
+ [["Organização",[["Separa produção, testes e segurança","Contas por ambiente"],["Regras que nenhuma conta pode quebrar","Políticas da organização"]]],
+  ["Identidade",[["Login único dos funcionários","SSO com o diretório da empresa"]]],
+  ["Rede",[["Liga as contas e o datacenter","Rede central (hub)"]]],
+  ["Segurança",[["Guarda a auditoria de todas as contas","Conta de logs centralizada"]]]],
+ ["Usuário root compartilhado","Uma conta para tudo"],
+ "A landing zone define as regras antes das migrações: contas separadas limitam o estrago de um erro, o SSO evita usuários soltos e os logs centralizados não podem ser apagados por quem administra cada conta.","mig"],
+
+["rnu",3,"Monte uma rede virtual com sub-redes pública e privadas.",
+ [["Sub-rede pública",[["Recebe o tráfego da internet","Balanceador de carga"],["Dá saída à internet para as privadas","NAT gateway"]]],
+  ["Sub-rede privada da aplicação",[["Roda o sistema sem IP público","Servidores de aplicação"]]],
+  ["Sub-rede privada de dados",[["Só aceita conexões da aplicação","Banco de dados"]]]],
+ ["Banco com IP público","Servidor com SSH aberto à internet"],
+ "Só o balanceador e o NAT ficam expostos. Aplicação e banco não têm IP público, e regras de segurança deixam o banco aceitar apenas a camada de aplicação.","sub"],
+["rnu",4,"Monte uma rede híbrida no modelo hub e spoke.",
+ [["Datacenter",[["Conexão privada com banda garantida","Link dedicado"],["Reserva pela internet","VPN site-to-site"]]],
+  ["Nuvem: hub",[["Concentra o roteamento entre redes","Transit gateway"],["Inspeciona o tráfego entre redes","Firewall central"]]],
+  ["Nuvem: spokes",[["Redes de cada sistema","VPCs de produção e de testes"]]]],
+ ["Peering entre todas as VPCs","IP público em cada servidor"],
+ "O hub evita a malha de peerings (que não é transitiva e cresce ao quadrado). A VPN serve de reserva barata caso o link dedicado caia.","con"],
+
+["seg",3,"Monte as camadas de proteção de uma aplicação web.",
+ [["Borda",[["Absorve ataques de volume","Proteção anti-DDoS"],["Bloqueia SQL injection e XSS","WAF"]]],
+  ["Acesso",[["Login com segundo fator","MFA"],["Senhas e chaves fora do código","Cofre de segredos"]]],
+  ["Dados",[["Dados cifrados no disco","Criptografia em repouso"]]],
+  ["Detecção",[["Junta e correlaciona os logs","SIEM"]]]],
+ ["Senha no código-fonte","Porta 3389 aberta à internet"],
+ "É a defesa em camadas: se uma falhar, a próxima segura. Sem detecção (SIEM), um ataque que passa pelas barreiras pode ficar meses sem ser notado.","red"],
+["seg",4,"Monte um acesso no modelo Zero Trust.",
+ [["Usuário",[["Confirma a identidade a cada acesso","Identidade com MFA"],["Verifica se o aparelho está seguro","Checagem do dispositivo"]]],
+  ["Acesso",[["Libera só a aplicação pedida, não a rede","Acesso por aplicação (ZTNA)"]]],
+  ["Aplicações",[["Cada serviço só fala com quem precisa","Microssegmentação"]]],
+  ["Monitoramento",[["Avalia risco e comportamento o tempo todo","Análise contínua de logs"]]]],
+ ["VPN que libera a rede inteira","Rede interna confiável por padrão"],
+ "Zero Trust parte do princípio de que nenhuma rede é confiável. Cada acesso é verificado (pessoa, aparelho e contexto) e liberado só para o recurso necessário.","iam"],
+
+["ha",3,"Monte uma aplicação que aguenta a queda de uma zona de disponibilidade.",
+ [["Entrada",[["Tira do ar as instâncias com falha","Balanceador com health check"]]],
+  ["Zona A",[["Atende parte do tráfego","Servidores na zona A"],["Recebe as escritas","Banco primário"]]],
+  ["Zona B",[["Atende o restante do tráfego","Servidores na zona B"],["Assume se a zona A cair","Réplica síncrona do banco"]]]],
+ ["Tudo em um único datacenter","Réplica no mesmo servidor"],
+ "Com servidores nas duas zonas e réplica síncrona, a queda de uma zona não perde dados (RPO perto de zero) e o balanceador desvia o tráfego em segundos.","red"],
+["ha",4,"Monte uma recuperação de desastre em warm standby entre regiões.",
+ [["Região principal",[["Atende todo o tráfego","Ambiente completo"],["Copia os dados continuamente","Replicação assíncrona do banco"]]],
+  ["Região de DR",[["Versão reduzida já rodando","Ambiente mínimo ligado"],["Cresce na hora do desastre","Autoescala"]]],
+  ["Global",[["Leva os usuários para a região de DR","DNS com failover"]]]],
+ ["Backup só no mesmo disco","Plano de DR nunca testado"],
+ "Entre regiões a replicação costuma ser assíncrona, por causa da distância, e o RPO fica em segundos ou minutos. Um plano nunca testado costuma falhar justamente no dia do desastre.","dr"],
+
+["db",3,"Monte um banco que aguenta muitas leituras.",
+ [["Aplicação",[["Guarda consultas repetidas em memória","Cache (Redis)"]]],
+  ["Banco",[["Recebe todas as escritas","Primário"],["Atende relatórios e leituras","Réplicas de leitura"]]],
+  ["Proteção",[["Volta a qualquer minuto dos últimos dias","Backup com PITR"]]]],
+ ["Escrever direto nas réplicas","Índice em todas as colunas"],
+ "O cache absorve as consultas repetidas e as réplicas tiram os relatórios do primário. As réplicas são só de leitura, e índice demais deixa as escritas lentas.","rep"],
+["db",4,"Monte uma migração de banco para a nuvem com pouca parada.",
+ [["Origem",[["Banco atual em produção","Banco no datacenter"],["Lê o log de transações","Captura de mudanças (CDC)"]]],
+  ["Transporte",[["Leva as mudanças em ordem","Fila de eventos (Kafka)"]]],
+  ["Destino",[["Recebe a carga inicial e as mudanças","Banco gerenciado na nuvem"],["Compara contagens e somas","Validação dos dados"]]]],
+ ["Exportar planilhas à mão","Parar o sistema por uma semana"],
+ "O CDC lê o log sem pesar no banco de origem e mantém o destino sincronizado. A validação dá segurança para a virada, que leva só alguns minutos.","bkp"],
+
+["cont",3,"Monte a publicação de uma aplicação no Kubernetes.",
+ [["Entrada",[["Rotas HTTP de fora do cluster","Ingress"]]],
+  ["Aplicação",[["Endereço estável dos pods","Service"],["Mantém 3 réplicas e atualiza aos poucos","Deployment"]]],
+  ["Configuração",[["Senha do banco","Secret"],["Configurações não sensíveis","ConfigMap"]]]],
+ ["IP do pod fixo no código","Senha dentro da imagem"],
+ "Os pods mudam de IP a todo momento, por isso o Service dá um endereço fixo. Configuração e segredos ficam fora da imagem, para a mesma imagem rodar em qualquer ambiente.","k8s"],
+["cont",4,"Monte um processamento de imagens orientado a eventos.",
+ [["Entrada",[["Recebe o upload do usuário","Armazenamento de objetos"],["Avisa que chegou um arquivo","Evento de criação"]]],
+  ["Processamento",[["Segura os pedidos nos picos","Fila"],["Gera a miniatura da imagem","Função serverless"]]],
+  ["Falhas",[["Guarda o que falhou várias vezes","Fila de mensagens mortas (DLQ)"]]]],
+ ["Servidor ligado 24h esperando","Rotina que vasculha o disco a cada minuto"],
+ "O evento dispara o trabalho só quando há arquivo, e a fila absorve os picos. A DLQ separa as mensagens problemáticas para análise, sem travar as outras.","srv"],
+
+["ops",3,"Monte uma esteira de entrega contínua.",
+ [["Integração",[["Dispara a cada push","Repositório Git"],["Compila e roda os testes","Pipeline de CI"],["Guarda a versão pronta","Registro de artefatos"]]],
+  ["Entrega",[["Testa em ambiente parecido com produção","Homologação"],["Libera para 5% dos usuários primeiro","Deploy canário"]]]],
+ ["Copiar arquivos por FTP","Editar direto no servidor"],
+ "O mesmo artefato testado passa por homologação e vai para produção, sem ser recompilado. O canário limita o impacto se algo escapar dos testes.","cic"],
+["ops",4,"Monte a observabilidade de um sistema com SLO.",
+ [["Coleta",[["Números de latência e erros","Métricas"],["Caminho da requisição entre serviços","Traces"],["Detalhe de cada evento","Logs"]]],
+  ["Análise",[["Painel de cada serviço","Dashboards"],["Avisa quando o SLO está em risco","Alerta de orçamento de erro"]]],
+  ["Resposta",[["Quem atende fora do horário","Escala de plantão"]]]],
+ ["Alerta para cada pico de CPU","Ler os logs só quando o cliente reclama"],
+ "Alertar pelo orçamento de erro foca no que o usuário sente e reduz alarmes falsos. Os três sinais juntos levam do sintoma à causa.","sre"],
+
+["sw",3,"Monte uma arquitetura de microsserviços para pedidos e pagamentos.",
+ [["Entrada",[["Ponto único para os clientes","API Gateway"]]],
+  ["Serviços",[["Cuida dos pedidos","Serviço de pedidos"],["Cuida dos pagamentos","Serviço de pagamentos"]]],
+  ["Integração",[["Avisa os outros que um pedido foi criado","Barramento de eventos"]]],
+  ["Dados",[["Cada serviço com seus próprios dados","Banco por serviço"]]]],
+ ["Banco único para todos os serviços","Chamadas em cadeia sem timeout"],
+ "Banco por serviço e eventos assíncronos mantêm os serviços independentes. Um banco compartilhado volta a acoplar tudo, como em um monólito distribuído.","est"],
+["sw",4,"Monte uma arquitetura CQRS.",
+ [["Escrita (comandos)",[["Recebe as alterações","API de comandos"],["Valida as regras do negócio","Modelo de domínio"]]],
+  ["Eventos",[["Registra o que aconteceu","Eventos de domínio"]]],
+  ["Leitura (consultas)",[["Tabelas prontas para as telas","Modelo de leitura"],["Responde as buscas rápido","API de consultas"]]]],
+ ["Telas lendo o modelo de escrita","Transação distribuída entre tudo"],
+ "No CQRS, escrita e leitura têm modelos separados. Os eventos atualizam o modelo de leitura, que fica alguns instantes atrás (consistência eventual).","res"],
+
+["idd",3,"Monte uma plataforma de dados para relatórios (ELT).",
+ [["Origens",[["Sistemas da empresa","ERP e CRM"]]],
+  ["Ingestão",[["Copia os dados brutos","Ferramenta de ingestão"],["Guarda tudo no formato original","Data lake"]]],
+  ["Transformação",[["Limpa e modela os dados","Transformações em SQL"],["Tabelas prontas para análise","Data warehouse"]]],
+  ["Consumo",[["Painéis para a diretoria","Ferramenta de BI"]]]],
+ ["Planilha enviada por e-mail","Consultas pesadas no banco do ERP em produção"],
+ "No ELT os dados chegam brutos e são transformados dentro da plataforma. Assim os relatórios não pesam no ERP e dá para refazer as transformações a partir do original.","etl"],
+["idd",4,"Monte uma integração por eventos entre e-commerce e ERP.",
+ [["Origem",[["Publica \"pedido criado\"","E-commerce"]]],
+  ["Integração",[["Entrega o evento a vários assinantes","Tópico pub/sub"],["Converte para o formato do ERP","Tradutor de mensagens"]]],
+  ["Destino",[["Recebe o pedido no formato dele","ERP"],["Processa cada pedido uma única vez","Consumidor idempotente"]]]],
+ ["Integração ponto a ponto entre todos","Arquivo enviado por FTP uma vez ao dia"],
+ "O tópico desacopla quem publica de quem consome, e novos sistemas assinam sem mexer no e-commerce. Como mensagens podem chegar repetidas, o consumidor precisa ser idempotente.","int"],
+
+["ia",3,"Monte um assistente que responde com base nos documentos da empresa (RAG).",
+ [["Preparação",[["Manuais e políticas da empresa","Documentos"],["Transforma trechos em vetores","Modelo de embeddings"],["Guarda e busca os vetores","Banco vetorial"]]],
+  ["Resposta",[["Monta o prompt com os trechos achados","Orquestrador"],["Escreve a resposta final","LLM"]]]],
+ ["Treinar um modelo do zero","Lista fixa de palavras-chave"],
+ "O RAG busca os trechos relevantes e entrega ao LLM junto com a pergunta. É mais barato que treinar um modelo e a base se atualiza só trocando os documentos.","gen"],
+["ia",4,"Monte o ciclo de MLOps de um modelo em produção.",
+ [["Dados",[["Atributos versionados e reaproveitáveis","Feature store"]]],
+  ["Treino",[["Registra parâmetros e métricas","Rastreamento de experimentos"],["Guarda as versões aprovadas","Registro de modelos"]]],
+  ["Produção",[["Entrega as previsões por API","Endpoint de inferência"],["Percebe quando os dados mudam","Monitoramento de drift"]]]],
+ ["Modelo enviado por e-mail","Treinar direto em produção"],
+ "O registro de modelos permite saber qual versão está no ar e voltar atrás. O monitoramento de drift avisa quando é hora de treinar de novo.","mlo"]
+];
+BRAW.forEach(function(r){
+  var k=r[0]+r[1]+"b"; counters[k]=(counters[k]||0)+1;
+  var slots=[]; r[3].forEach(function(g,gi){g[1].forEach(function(x){slots.push({g:gi,h:x[0],a:x[1]});});});
+  var q={id:r[0]+r[1]+"-b"+counters[k],t:r[0],l:r[1],type:"build",q:r[2],groups:r[3].map(function(g){return g[0];}),slots:slots,extra:r[4],e:r[5],k:r[6],boss:false};
+  QS.push(q); BYID[q.id]=q;
+});
 XRAW.forEach(function(r){
   var k=r[0]+r[1]+r[2]; counters[k]=(counters[k]||0)+1;
   var q={id:r[0]+r[1]+"-"+r[2]+counters[k],t:r[0],l:r[1],type:r[2]==="o"?"order":"match",q:r[3],e:r[5],k:r[6],boss:false};
@@ -2300,8 +2490,12 @@ XRAW.forEach(function(r){
 
 /* ---------- Sons e voz ----------
    Sons gerados pelo navegador (sem arquivos). Leitura em voz alta pela voz do próprio aparelho. */
-var PREF_KEY="arquiteto-de-bolso.prefs", prefs={sound:true};
-try{var pr0=JSON.parse(localStorage.getItem(PREF_KEY)||"{}"); if(pr0&&typeof pr0.sound==="boolean")prefs.sound=pr0.sound;}catch(e){}
+var PREF_KEY="arquiteto-de-bolso.prefs", prefs={sound:true,voice:{},rate:1};
+try{var pr0=JSON.parse(localStorage.getItem(PREF_KEY)||"{}");
+  if(pr0&&typeof pr0.sound==="boolean")prefs.sound=pr0.sound;
+  if(pr0&&pr0.voice&&typeof pr0.voice==="object")prefs.voice=pr0.voice;
+  if(pr0&&typeof pr0.rate==="number"&&pr0.rate>=0.7&&pr0.rate<=1.5)prefs.rate=pr0.rate;
+}catch(e){}
 function savePrefs(){try{localStorage.setItem(PREF_KEY,JSON.stringify(prefs));}catch(e){}}
 var AC=null;
 var SFX={
@@ -2328,13 +2522,28 @@ function sfx(n){
 }
 var TTS=("speechSynthesis" in window)&&typeof SpeechSynthesisUtterance!=="undefined";
 var FL={ing:"en-US",esp:"es-ES"};
-if(TTS){try{speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged=function(){};}catch(e){TTS=false;}}
-function voiceFor(lang){
+if(TTS){try{speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged=function(){if(view==="voz")render();};}catch(e){TTS=false;}}
+/* Nota de qualidade: vozes neurais/online soam bem melhor que as vozes compactas instaladas no aparelho. */
+function voiceScore(v,lang){
+  var vl=String(v.lang||"").replace("_","-").toLowerCase(), L=lang.toLowerCase(), n=String(v.name||""), sc=0;
+  if(vl===L)sc+=40; else if(vl.slice(0,2)===L.slice(0,2))sc+=15; else return -999;
+  if(/natural|neural|wavenet|premium|enhanced|aprimorad|melhorad|online/i.test(n))sc+=40;
+  if(/google/i.test(n))sc+=25;
+  if(/microsoft/i.test(n)&&/online/i.test(n))sc+=10;
+  if(/luciana|francisca|thalita|antonio|samantha|ava|jenny|aria|elvira|paulina|monica/i.test(n))sc+=8;
+  if(/compact|espeak|eloquence|novelty|whisper|bad news|bells|bahh|boing|bubbles|cellos|zarvox|trinoids|superstar|organ|jester|albert|fred|junior|ralph|grandma|grandpa|rocko|shelley|sandy|flo|reed|eddy/i.test(n))sc-=60;
+  if(v.localService===false)sc+=5;
+  return sc;
+}
+function voicesFor(lang){
   var vs=[]; try{vs=speechSynthesis.getVoices()||[];}catch(e){}
-  var L=lang.toLowerCase(), p=L.slice(0,2), best=null;
-  vs.forEach(function(v){var vl=String(v.lang||"").replace("_","-").toLowerCase(); if(vl===L&&!best)best=v;});
-  if(!best)vs.forEach(function(v){var vl=String(v.lang||"").toLowerCase(); if(vl.slice(0,2)===p&&!best)best=v;});
-  return best;
+  return vs.map(function(v){return {v:v,s:voiceScore(v,lang)};}).filter(function(x){return x.s>-999;})
+    .sort(function(a,b){return b.s-a.s||String(a.v.name).localeCompare(String(b.v.name));}).map(function(x){return x.v;});
+}
+function voiceFor(lang){
+  var list=voicesFor(lang), key=lang.slice(0,2), want=prefs.voice[key];
+  if(want){for(var i=0;i<list.length;i++){if(list[i].voiceURI===want||list[i].name===want)return list[i];}}
+  return list[0]||null;
 }
 function stopVoice(){if(TTS){try{speechSynthesis.cancel();}catch(e){}}}
 function say(parts){
@@ -2342,7 +2551,7 @@ function say(parts){
   stopVoice();
   parts.forEach(function(p){
     var x=String(p.x||"").trim(); if(!x)return;
-    var u=new SpeechSynthesisUtterance(x); u.lang=p.l; var v=voiceFor(p.l); if(v)u.voice=v; u.rate=p.l==="pt-BR"?1.05:0.9;
+    var u=new SpeechSynthesisUtterance(x); u.lang=p.l; var v=voiceFor(p.l); if(v)u.voice=v; u.rate=(p.l==="pt-BR"?1:0.92)*prefs.rate;
     try{speechSynthesis.speak(u);}catch(e){}
   });
 }
@@ -2364,6 +2573,7 @@ function speakQ(){
   var q=s.cur, fl=FL[q.t]||"pt-BR", parts=qParts(q.q,q.t);
   if(q.type==="order")s.pool.concat(s.ans).sort(function(a,b){return a-b;}).forEach(function(i){parts.push({x:q.items[i],l:fl});});
   else if(q.type==="match"){s.L.forEach(function(i){parts.push({x:q.pairs[i][0],l:fl});}); s.R.forEach(function(i){parts.push({x:q.pairs[i][1],l:"pt-BR"});});}
+  else if(q.type==="build")q.slots.forEach(function(sl){parts.push({x:sl.h+".",l:"pt-BR"});});
   else s.opts.forEach(function(o,i){parts.push({x:"ABCD".charAt(i)+".",l:"pt-BR"}); parts.push({x:o.t,l:"pt-BR"});});
   say(parts);
 }
@@ -2439,7 +2649,7 @@ function newSess(mode,extra){
 function startLesson(t,l){
   var group=QS.filter(function(q){return q.t===t&&q.l===l;});
   var plain=shuffle(group.filter(function(q){return !q.boss&&!q.type;}));
-  var xs=shuffle(group.filter(function(q){return q.type;})).slice(0,2);
+  var xs=shuffle(group.filter(function(q){return q.type&&q.type!=="build";})).slice(0,1).concat(group.filter(function(q){return q.type==="build";}).slice(0,1));
   var body=shuffle(plain.slice(0,Math.max(0,plain.length-xs.length)).concat(xs));
   var boss=group.filter(function(q){return q.boss;});
   var qs=body.concat(boss);
@@ -2484,6 +2694,9 @@ function loadQ(){
   }else if(q.type==="match"){
     var ix=q.pairs.map(function(x,k){return k;}); s.L=shuffle(ix); s.R=shuffle(ix);
     for(var tr=0;tr<10&&s.R.join()===s.L.join();tr++)s.R=shuffle(ix);
+  }else if(q.type==="build"){
+    s.bopts=shuffle(q.slots.map(function(x){return x.a;}).concat(q.extra));
+    s.place=q.slots.map(function(){return -1;}); s.bsel=0;
   }else s.opts=shuffle(q.o.map(function(t,k){return {t:t,ok:k===0};}));
   s.locked=false; s.pick=null; s.ok=false; s.gain=0; stopVoice();
   render(); window.scrollTo(0,0);
@@ -2495,6 +2708,7 @@ function checkX(){
   var s=sess, q=s.cur; if(s.locked)return;
   if(q.type==="order"){ if(s.pool.length)return; grade(s.ans.every(function(v,k){return v===k;})); }
   else if(q.type==="match"){ if(Object.keys(s.m).length<q.pairs.length)return; grade(q.pairs.every(function(x,k){return s.m[k]===k;})); }
+  else if(q.type==="build"){ if(s.place.indexOf(-1)>=0)return; grade(q.slots.every(function(sl,k){return s.bopts[s.place[k]]===sl.a;})); }
 }
 function grade(ok){
   var s=sess; if(s.locked)return; s.locked=true; s.ok=ok; stopVoice(); sfx(ok?"ok":"bad");
@@ -2515,7 +2729,7 @@ function grade(ok){
   }
   save(); s.held=false; render();
   var fbn=document.getElementById("fb");
-  if(fbn){var lim=fbn.getBoundingClientRect().top-12, mb=0; [].forEach.call(document.querySelectorAll(".opt.ok,.opt.bad,.xi.ok,.xi.bad"),function(o){mb=Math.max(mb,o.getBoundingClientRect().bottom);}); if(mb>lim)window.scrollBy({top:mb-lim,behavior:"smooth"});}
+  if(fbn){var lim=fbn.getBoundingClientRect().top-12, mb=0; [].forEach.call(document.querySelectorAll(".opt.ok,.opt.bad,.xi.ok:not(.bslot),.xi.bad:not(.bslot)"),function(o){mb=Math.max(mb,o.getBoundingClientRect().bottom);}); if(mb>lim)window.scrollBy({top:mb-lim,behavior:"smooth"});}
   if(ok){ s.timer=setTimeout(function(){ if(sess===s&&view==="quiz"&&s.locked&&!s.held)next(); },AUTO_MS); }
 }
 function ordTap(i,add){
@@ -2523,6 +2737,18 @@ function ordTap(i,add){
   if(add){var p=s.pool.indexOf(i); if(p<0)return; s.pool.splice(p,1); s.ans.push(i); speakTerm(s.cur.items[i],s.cur.t);}
   else{var a=s.ans.indexOf(i); if(a<0)return; s.ans.splice(a,1); s.pool.push(i);}
   sfx("tap"); render();
+}
+function bSlot(i){
+  var s=sess; if(!s||s.locked)return;
+  if(s.place[i]>=0){s.place[i]=-1;}
+  s.bsel=i; sfx("tap"); render();
+}
+function bChip(o){
+  var s=sess; if(!s||s.locked||s.place.indexOf(o)>=0)return;
+  var i=(s.bsel>=0&&s.place[s.bsel]<0)?s.bsel:s.place.indexOf(-1); if(i<0)return;
+  s.place[i]=o;
+  var nx=-1; for(var k=1;k<=s.place.length;k++){var j=(i+k)%s.place.length; if(s.place[j]<0){nx=j;break;}}
+  s.bsel=nx; sfx("tap"); render();
 }
 function leftOf(r){var s=sess; for(var k in s.m){if(s.m[k]===r)return Number(k);} return -1;}
 function mTap(side,i){
@@ -2702,6 +2928,7 @@ function renderHome(){
   h+='<footer class="foot"><p>Material de estudo independente, sem vínculo com AWS, Microsoft, Oracle ou outro fornecedor. As questões são originais e foram escritas a partir de conceitos de arquitetura; não são questões de prova. Confira detalhes na documentação oficial antes de usá-los em decisões reais.</p>'+
      '<p>O progresso fica salvo neste aparelho'+(CLOUD_OK?' (e na nuvem, se você entrar com o Google)':'')+'. Para guardar uma cópia ou levar para outro aparelho, use o backup.</p>'+
      (showBackup?'<textarea id="bk" class="bk" rows="4" aria-label="Código de backup"></textarea><div class="row"><button class="secondary" data-act="bk-copy">Copiar código</button><button class="secondary" data-act="bk-restore">Restaurar deste texto</button></div>':'<button class="linkbtn" data-act="bk-open">Backup do progresso</button>')+
+     (TTS?'<button class="linkbtn" data-act="voz">Escolher a voz da leitura</button>':'')+
      '<button class="linkbtn" data-act="snd">'+(prefs.sound?'Sons: ligados (toque para desligar)':'Sons: desligados (toque para ligar)')+'</button>'+
      '<button class="linkbtn" data-act="placement-all">Refazer o nivelamento geral</button>'+(confirmReset?'<div class="row"><button class="secondary" data-act="reset-yes">Confirmar: apagar progresso</button><button class="secondary" data-act="reset-no">Cancelar</button></div>'
                   :'<button class="linkbtn" data-act="reset">Apagar meu progresso</button>')+'</footer>';
@@ -2709,7 +2936,27 @@ function renderHome(){
   var bk=document.getElementById("bk"); if(bk)bk.value=bkText;
 }
 
+function bBody(s,q,answered){
+  var h='<p class="xhint">'+(answered?'Sua arquitetura:':'Toque em um espaço e depois na peça que vai nele. Toque numa peça já colocada para tirar.')+'</p><div class="arch">';
+  q.groups.forEach(function(gn,gi){
+    if(gi)h+='<div class="aflow" aria-hidden="true"><i></i></div>';
+    h+='<div class="ag"><span class="agl">'+esc(gn)+'</span>';
+    q.slots.forEach(function(sl,k){
+      if(sl.g!==gi)return;
+      var o=s.place[k], filled=o>=0, sel=!answered&&s.bsel===k;
+      var cls="xi bslot"+(filled?" filled":"")+(sel?" sel":"")+(answered?(s.bopts[o]===sl.a?" ok":" bad"):"");
+      h+='<button class="'+cls+'" data-act="b-slot" data-i="'+k+'"'+(answered?' disabled':'')+'><small>'+esc(sl.h)+'</small><span class="t">'+(filled?esc(s.bopts[o]):'<em>'+(sel?'Escolha a peça abaixo':'Vazio')+'</em>')+'</span></button>';
+    });
+    h+='</div>';
+  });
+  h+='</div>';
+  var left=s.bopts.map(function(x,i){return i;}).filter(function(i){return s.place.indexOf(i)<0;});
+  if(!answered&&left.length)h+='<span class="label">Peças</span><div class="pool">'+left.map(function(i){return '<button class="xi chip2" data-act="b-chip" data-i="'+i+'">'+esc(s.bopts[i])+'</button>';}).join('')+'</div>';
+  if(!answered)h+='<button class="primary" data-act="check"'+(s.place.indexOf(-1)>=0?' disabled':'')+'>Verificar</button>';
+  return h;
+}
 function xBody(s,q,answered){
+  if(q.type==="build")return bBody(s,q,answered);
   var h='', fl=FL[q.t];
   if(q.type==="order"){
     h+='<p class="xhint">'+(answered?'Sua ordem:':'Toque nos itens na ordem certa. Toque de novo para tirar.')+'</p><ol class="seq">';
@@ -2741,6 +2988,7 @@ function xBody(s,q,answered){
   return h;
 }
 function xSolution(q){
+  if(q.type==="build")return '<div class="sol"><span class="label">Arquitetura certa</span><ul>'+q.slots.map(function(sl){return '<li>'+esc(sl.h)+': <b>'+esc(sl.a)+'</b></li>';}).join('')+'</ul>'+(q.extra.length?'<p class="fine">Peças que sobram: '+q.extra.map(esc).join(', ')+'.</p>':'')+'</div>';
   if(q.type==="order")return '<div class="sol"><span class="label">Ordem certa</span><ol>'+q.items.map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ol></div>';
   return '<div class="sol"><span class="label">Pares certos</span><ul>'+q.pairs.map(function(p){return '<li><b>'+esc(p[0])+'</b> → '+esc(p[1])+'</li>';}).join('')+'</ul></div>';
 }
@@ -2751,7 +2999,7 @@ function renderQuiz(){
   var h='<div class="qtop tc" style="--h:'+HUES[q.t]+'"><button class="ghost" data-act="home">Sair</button><div class="track"><i style="width:'+pct+'%"></i></div><span class="count">'+(s.i+1)+'/'+s.total+'</span>'+
     '<button class="ghost icob" data-act="snd" aria-pressed="'+(prefs.sound?"true":"false")+'" aria-label="'+(prefs.sound?"Desligar os sons":"Ligar os sons")+'" title="'+(prefs.sound?"Sons ligados":"Sons desligados")+'">'+ico(prefs.sound?"vol":"mute","sm")+'</button></div>';
   h+='<section class="card qcard"><div class="qmeta"><span class="label">'+esc(label)+'</span>'+
-    (q.type?'<span class="xtag">'+(q.type==="order"?"Ordene":"Ligue os pares")+'</span>':'')+
+    (q.type?'<span class="xtag">'+({order:"Ordene",match:"Ligue os pares",build:"Monte a arquitetura"})[q.type]+'</span>':'')+
     (s.mode==="lesson"&&q.boss?'<span class="boss">Questão-chefe · XP em dobro</span>':'')+'</div>';
   h+='<div class="qrow"><p class="qtext">'+esc(q.q)+'</p>'+(TTS?'<button class="ghost icob" data-act="speak" aria-label="Ouvir a pergunta" title="Ouvir a pergunta">'+ico("speak","sm")+'</button>':'')+'</div>';
   if(q.type){h+=xBody(s,q,answered);}
@@ -2764,6 +3012,7 @@ function renderQuiz(){
     });
     h+='</div>';
   }
+  if(TTS&&!answered)h+='<button class="linkbtn vlink" data-act="voz">Voz ruim? Trocar a voz</button>';
   h+='</section>';
   if(answered){
     var ok=s.ok, auto=ok&&!s.held;
@@ -2809,12 +3058,38 @@ function renderResult(){
   if(r.mode==="placement"||(r.mode==="lesson"&&r.pass))burst();
 }
 
+var VOZ_LANGS=[["pt-BR","Português",'Olá! Esta é a voz que vai ler as perguntas do Arquiteto de Bolso.'],["en-US","Inglês",'Hi! This voice will read the English questions. There was a major outage yesterday.'],["es-ES","Espanhol",'¡Hola! Esta voz va a leer las preguntas en español. La caída del servicio fue breve.']];
+function renderVoz(){
+  var h='<div class="qtop"><button class="ghost" data-act="home">Voltar</button><div class="brand" style="font-size:20px">Voz da leitura</div></div>';
+  if(!TTS){app.innerHTML=h+'<section class="card"><p class="muted">Este navegador não tem leitura em voz alta.</p></section>';return;}
+  h+='<section class="card"><p class="muted">O jogo usa as vozes do seu aparelho. As marcadas como <b>recomendada</b> são as de melhor qualidade que encontrei. Teste e escolha a que preferir.</p>';
+  VOZ_LANGS.forEach(function(L){
+    var list=voicesFor(L[0]), cur=voiceFor(L[0]), key=L[0].slice(0,2);
+    h+='<div class="vrow"><label class="label" for="v-'+key+'">'+L[1]+'</label>';
+    if(!list.length){h+='<p class="fine">Nenhuma voz deste idioma no aparelho.</p></div>';return;}
+    h+='<div class="row2"><select class="txt vsel" id="v-'+key+'" data-act="voice-set" data-k="'+key+'">'+list.map(function(v,i){return '<option value="'+esc(v.voiceURI||v.name)+'"'+(cur===v?' selected':'')+'>'+esc(v.name)+(i===0?' (recomendada)':'')+'</option>';}).join('')+'</select>'+
+       '<button class="ghost icob" data-act="voice-test" data-l="'+L[0]+'" aria-label="Testar a voz em '+L[1]+'" title="Testar">'+ico("speak","sm")+'</button></div></div>';
+  });
+  h+='<div class="vrow"><label class="label" for="v-rate">Velocidade: <b id="v-rate-val">'+Math.round(prefs.rate*100)+'%</b></label><input id="v-rate" type="range" min="0.7" max="1.5" step="0.05" value="'+prefs.rate+'" data-act="rate-set"></div>';
+  h+='<button class="secondary" data-act="voice-reset">Voltar às recomendadas</button></section>';
+  h+='<section class="card"><h2>Quer uma voz melhor?</h2><ul class="tips">'+
+     '<li><b>Android:</b> em Configurações, procure "Saída de conversão de texto em voz", escolha o mecanismo do Google, toque na engrenagem e em "Instalar dados de voz" para baixar as vozes de alta qualidade de cada idioma.</li>'+
+     '<li><b>iPhone:</b> em Ajustes > Acessibilidade > Conteúdo Falado > Vozes, baixe uma voz "Aprimorada" ou "Premium" (por exemplo, Luciana).</li>'+
+     '<li><b>Computador:</b> no Microsoft Edge aparecem vozes "Natural" (online), que são as mais realistas.</li>'+
+     '</ul><p class="fine">Depois de instalar, feche e abra o app para a voz nova aparecer na lista.</p></section>';
+  app.innerHTML=h;
+}
 function render(){
   app.style.paddingBottom="";
-  if(view==="quiz"&&sess)renderQuiz(); else if(view==="result"&&res)renderResult(); else if(view==="rank")renderRank(); else {view="home";renderHome();}
+  if(view==="quiz"&&sess)renderQuiz(); else if(view==="result"&&res)renderResult(); else if(view==="rank")renderRank(); else if(view==="voz")renderVoz(); else {view="home";renderHome();}
 }
 
-app.addEventListener("change",function(e){var t=e.target; if(t&&t.getAttribute&&t.getAttribute("data-act")==="global-toggle")setGlobal(t.checked);});
+app.addEventListener("change",function(e){var t=e.target, a0=t&&t.getAttribute&&t.getAttribute("data-act");
+  if(a0==="global-toggle")setGlobal(t.checked);
+  else if(a0==="voice-set"){prefs.voice[t.getAttribute("data-k")]=t.value; savePrefs(); var L0=t.getAttribute("data-k")==="pt"?"pt-BR":(t.getAttribute("data-k")==="en"?"en-US":"es-ES"); VOZ_LANGS.forEach(function(L){if(L[0]===L0)say([{x:L[2],l:L0}]);});}
+  else if(a0==="rate-set"){prefs.rate=Number(t.value)||1; savePrefs(); say([{x:VOZ_LANGS[0][2],l:"pt-BR"}]);}
+});
+app.addEventListener("input",function(e){var t=e.target; if(t&&t.id==="v-rate"){var vv=document.getElementById("v-rate-val"); if(vv)vv.textContent=Math.round(Number(t.value)*100)+"%";}});
 app.addEventListener("click",function(e){
   var b=e.target.closest("[data-act]"); if(!b||b.disabled)return;
   var a=b.getAttribute("data-act");
@@ -2845,6 +3120,11 @@ app.addEventListener("click",function(e){
   }
   else if(a==="pick")pick(Number(b.getAttribute("data-i")));
   else if(a==="check")checkX();
+  else if(a==="b-slot")bSlot(Number(b.getAttribute("data-i")));
+  else if(a==="b-chip")bChip(Number(b.getAttribute("data-i")));
+  else if(a==="voz"){view="voz";render();window.scrollTo(0,0);}
+  else if(a==="voice-test"){var l0=b.getAttribute("data-l"); VOZ_LANGS.forEach(function(L){if(L[0]===l0)say([{x:L[2],l:l0}]);});}
+  else if(a==="voice-reset"){prefs.voice={}; prefs.rate=1; savePrefs(); render(); toast("Vozes recomendadas restauradas.");}
   else if(a==="ord-add")ordTap(Number(b.getAttribute("data-i")),true);
   else if(a==="ord-del")ordTap(Number(b.getAttribute("data-i")),false);
   else if(a==="m-pick")mTap(b.getAttribute("data-s"),Number(b.getAttribute("data-i")));
