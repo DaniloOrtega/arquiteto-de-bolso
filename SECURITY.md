@@ -9,6 +9,7 @@ Use a aba **Security > Report a vulnerability** deste repositório para avisar e
 | --- | --- | --- |
 | Lint e testes | ESLint, `tests/check.js` | Actions > Esteira > Testes |
 | SAST (código) | CodeQL | Security > Code scanning |
+| Qualidade do código | SonarCloud | sonarcloud.io e comentário no PR |
 | SCA (bibliotecas) | Dependabot, Dependency Review | Security > Dependabot e o próprio PR |
 | Segredos | Gitleaks, secret scanning do GitHub | Actions > Esteira > Segredos |
 | Cabeçalhos | `_headers` na Cloudflare Pages | Actions > Esteira > Publicar |
