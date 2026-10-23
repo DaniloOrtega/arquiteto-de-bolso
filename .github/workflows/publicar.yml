@@ -1,7 +1,12 @@
-name: Testar e publicar
+name: Esteira
 
-# Cada push na main publica em https://arquiteto-de-bolso.pages.dev.
-# Pull requests rodam os testes e ganham um endereço de pré-visualização.
+# A esteira completa do Arquiteto de Bolso:
+#   Testes (lint + questões) e Segredos (Gitleaks) rodam em todo push e PR.
+#   Dependências (revisão das bibliotecas novas) roda nos PRs.
+#   Se tudo passar, Publicar manda para a Cloudflare Pages e confere o site no ar.
+#   Por fim, DAST (OWASP ZAP) ataca o endereço publicado por fora, como um invasor.
+# Push na main publica em https://arquiteto-de-bolso.pages.dev; PR ganha um endereço de prévia.
+# O SAST (CodeQL) roda em outro arquivo: codeql.yml.
 on:
   push:
     branches: [main]
@@ -9,51 +14,115 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: publicar-${{ github.ref }}
+  group: esteira-${{ github.ref }}
   cancel-in-progress: true
 
+# Por padrão cada job só pode ler o código. Quem precisa de mais pede no próprio job.
+permissions:
+  contents: read
+
 jobs:
-  testar:
+  testes:
     name: Testes
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 20
+          node-version: 22
+          cache: npm
+      - name: Instalar ferramentas (versões travadas no package-lock.json)
+        run: npm ci
+      - name: Lint do JavaScript (ESLint)
+        run: npm run lint
       - name: Testar questões e código
-        run: node tests/check.js
+        run: npm test
+
+  segredos:
+    name: Segredos
+    runs-on: ubuntu-latest
+    env:
+      GITLEAKS_VERSION: 8.30.1
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # histórico inteiro: um segredo apagado continua nos commits antigos
+      - name: Baixar o Gitleaks e conferir a assinatura do arquivo
+        run: |
+          curl -sSfL -o gitleaks.tar.gz "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          echo "${GITLEAKS_SHA256}  gitleaks.tar.gz" | sha256sum -c -
+          tar xzf gitleaks.tar.gz gitleaks
+      - name: Procurar senhas e tokens em todo o histórico
+        run: ./gitleaks git --redact --no-banner --config .gitleaks.toml .
+
+  dependencias:
+    name: Dependências
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Barrar biblioteca nova com falha conhecida ou licença proibida
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: moderate
+          deny-licenses: GPL-3.0, AGPL-3.0
+          comment-summary-in-pr: on-failure
 
   publicar:
     name: Publicar
-    needs: testar
+    needs: [testes, segredos]
     runs-on: ubuntu-latest
     # PRs vindos de forks não recebem os segredos, então não publicam.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       contents: read
       deployments: write
+    outputs:
+      url: ${{ steps.deploy.outputs.deployment-url }}
     env:
       HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Montar a pasta do site
         run: |
           mkdir -p dist
-          cp -r index.html sw.js manifest.webmanifest icons dist/
+          cp -r index.html sw.js manifest.webmanifest icons _headers dist/
       - name: Avisar que faltam os segredos da Cloudflare
         if: env.HAS_TOKEN != 'true'
         run: echo "::warning::Publicação pulada. Crie os segredos CLOUDFLARE_API_TOKEN e CLOUDFLARE_ACCOUNT_ID no repositório."
       - name: Publicar no Cloudflare Pages
         if: env.HAS_TOKEN == 'true'
         id: deploy
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@953926a2e2182532811c01a25e53647d93bf07c0 # v4.1.3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: pages deploy dist --project-name=arquiteto-de-bolso --branch=${{ github.head_ref || github.ref_name }} --commit-dirty=true
-      - name: Endereço publicado
+      - name: Conferir o site no ar (smoke test)
         if: env.HAS_TOKEN == 'true'
+        env:
+          URL: ${{ steps.deploy.outputs.deployment-url }}
         run: |
-          echo "Publicado em: ${{ steps.deploy.outputs.deployment-url }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "${{ steps.deploy.outputs.deployment-url }}"
+          echo "Publicado em: $URL" >> "$GITHUB_STEP_SUMMARY"
+          bash tests/site_no_ar.sh "$URL"
+
+  dast:
+    name: DAST
+    needs: publicar
+    if: needs.publicar.outputs.url != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Ataque simulado no endereço publicado (OWASP ZAP baseline)
+        uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25 # v0.15.0
+        with:
+          target: ${{ needs.publicar.outputs.url }}
+          rules_file_name: .zap/rules.tsv
+          cmd_options: -j -I
+          allow_issue_writing: false
+          fail_action: true
+          artifact_name: relatorio-zap

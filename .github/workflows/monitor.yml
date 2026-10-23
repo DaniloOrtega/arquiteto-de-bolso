@@ -1,0 +1,64 @@
+name: Monitoramento
+
+# A câmera da loja: de hora em hora confere se o site está no ar, com o conteúdo certo
+# e com os cabeçalhos de segurança. Se falhar, abre uma issue (o GitHub te avisa por e-mail).
+# Quando voltar, fecha a issue sozinho. Toda segunda também roda o DAST na produção.
+on:
+  schedule:
+    - cron: "23 * * * *"
+    - cron: "41 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SITE: https://arquiteto-de-bolso.pages.dev
+
+jobs:
+  no-ar:
+    name: Site no ar
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Conferir o site
+        id: check
+        run: bash tests/site_no_ar.sh "$SITE"
+      - name: Abrir issue se caiu
+        if: failure() && steps.check.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          aberta=$(gh issue list --state open --search "in:title [Monitoramento] Site fora do ar" --json number --jq '.[0].number')
+          if [ -z "$aberta" ]; then
+            gh issue create --title "[Monitoramento] Site fora do ar" --body "A checagem de $SITE falhou. Detalhes: $RUN"
+          else
+            gh issue comment "$aberta" --body "Continua falhando: $RUN"
+          fi
+      - name: Fechar issue se voltou
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for n in $(gh issue list --state open --search "in:title [Monitoramento] Site fora do ar" --json number --jq '.[].number'); do
+            gh issue close "$n" --comment "O site voltou: checagem OK."
+          done
+
+  dast-producao:
+    name: DAST na produção
+    if: github.event.schedule == '41 7 * * 1' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: zaproxy/action-baseline@de8ad967d3548d44ef623df22cf95c3b0baf8b25 # v0.15.0
+        with:
+          target: ${{ env.SITE }}
+          rules_file_name: .zap/rules.tsv
+          cmd_options: -j -I
+          allow_issue_writing: false
+          fail_action: true
+          artifact_name: relatorio-zap-producao

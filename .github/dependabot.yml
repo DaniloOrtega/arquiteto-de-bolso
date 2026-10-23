@@ -1,0 +1,21 @@
+# SCA: o Dependabot vigia as bibliotecas (npm) e as ações do GitHub Actions.
+# Quando sai versão nova ou correção de segurança, ele abre um PR sozinho,
+# que passa pela esteira inteira antes do merge.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      ferramentas:
+        patterns: ["*"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      acoes:
+        patterns: ["*"]
