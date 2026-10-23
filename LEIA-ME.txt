@@ -5,10 +5,12 @@ Endereço principal: https://arquiteto-de-bolso.pages.dev (Cloudflare Pages)
 COMO O SITE É PUBLICADO (automático, pela esteira .github/workflows/publicar.yml)
 - Cada push ou PR passa por:
   1. Testes: lint do JavaScript (npm run lint) e checagem das questões (npm test).
-  2. Segredos: o Gitleaks procura senhas e tokens em todo o histórico.
-  3. Dependências (só em PR): barra biblioteca nova com falha conhecida.
-  4. Publicar: manda para o Cloudflare Pages e confere o site no ar (tests/site_no_ar.sh).
-  5. DAST: o OWASP ZAP ataca o endereço publicado por fora. Relatório nos anexos da execução.
+  2. E2E: o Playwright abre o jogo num navegador e joga uma lição inteira (npm run test:e2e).
+     Relatório e prints das telas ficam nos anexos da execução.
+  3. Segredos: o Gitleaks procura senhas e tokens em todo o histórico.
+  4. Dependências (só em PR): barra biblioteca nova com falha conhecida.
+  5. Publicar: manda para o Cloudflare Pages e confere o site no ar (tests/site_no_ar.sh).
+  6. DAST: o OWASP ZAP ataca o endereço publicado por fora. Relatório nos anexos da execução.
 - Em paralelo, o CodeQL (codeql.yml) faz o SAST e o Dependabot abre PRs de atualização.
 - Push na main publica em produção; PR ganha um endereço de pré-visualização.
 - De hora em hora, monitor.yml confere o site e abre uma issue se ele cair.
@@ -16,6 +18,7 @@ COMO O SITE É PUBLICADO (automático, pela esteira .github/workflows/publicar.y
 
 PARA RODAR NO SEU COMPUTADOR
 - npm ci, depois npm run lint e npm test.
+- Testes no navegador: npx playwright install chromium (uma vez) e npm run test:e2e.
 
 SEGREDOS NECESSÁRIOS NO GITHUB (Settings > Secrets and variables > Actions)
 - CLOUDFLARE_API_TOKEN: token com a permissão "Cloudflare Pages: Edit".

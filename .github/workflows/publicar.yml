@@ -1,7 +1,8 @@
 name: Esteira
 
 # A esteira completa do Arquiteto de Bolso:
-#   Testes (lint + questões) e Segredos (Gitleaks) rodam em todo push e PR.
+#   Testes (lint + questões), E2E (Playwright jogando no navegador) e Segredos (Gitleaks)
+#   rodam em todo push e PR.
 #   Dependências (revisão das bibliotecas novas) roda nos PRs.
 #   Se tudo passar, Publicar manda para a Cloudflare Pages e confere o site no ar.
 #   Por fim, DAST (OWASP ZAP) ataca o endereço publicado por fora, como um invasor.
@@ -37,6 +38,31 @@ jobs:
         run: npm run lint
       - name: Testar questões e código
         run: npm test
+
+  e2e:
+    name: E2E
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Instalar o navegador (Chromium)
+        run: npx playwright install --with-deps chromium
+      - name: Jogar o jogo no navegador (Playwright)
+        run: npm run test:e2e
+      - name: Guardar relatório e telas
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: relatorio-e2e
+          path: |
+            playwright-report/
+            tests/e2e/telas/
+            test-results/
+          retention-days: 14
 
   segredos:
     name: Segredos
@@ -74,7 +100,7 @@ jobs:
 
   publicar:
     name: Publicar
-    needs: [testes, segredos]
+    needs: [testes, e2e, segredos]
     runs-on: ubuntu-latest
     # PRs vindos de forks não recebem os segredos, então não publicam.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
