@@ -1,14 +1,18 @@
-ARQUITETO DE BOLSO - COMO PUBLICAR NO GITHUB PAGES
+ARQUITETO DE BOLSO
 
-1. Crie uma conta em github.com (se ainda nao tiver).
-2. Clique em "+" > "New repository". Nome sugerido: arquiteto-de-bolso. Marque "Public". Crie.
-3. Na pagina do repositorio, clique em "uploading an existing file" e envie TODOS os arquivos desta pasta:
-   index.html, manifest.webmanifest, sw.js e a pasta icons (com os 3 PNG). Clique em "Commit changes".
-4. Va em Settings > Pages. Em "Branch" escolha main e a pasta / (root). Salve.
-5. Espere 1 a 2 minutos. O endereco sera: https://SEU-USUARIO.github.io/arquiteto-de-bolso/
-6. No Chrome do Android, abra o endereco. Toque nos tres pontinhos > "Instalar app" (ou "Adicionar a tela inicial").
+Endereço principal: https://arquiteto-de-bolso.pages.dev (Cloudflare Pages)
 
-Observacoes:
-- O progresso fica salvo no aparelho. Use o backup do rodape para levar para outro aparelho.
-- Para atualizar o jogo no futuro, substitua o index.html no repositorio. O app pega a versao nova quando houver internet.
-- Se mudar o endereco do site, o progresso salvo nao acompanha: faca o backup antes.
+COMO O SITE É PUBLICADO (automático)
+- Cada push ou merge na branch main roda o GitHub Actions (.github/workflows/publicar.yml):
+  1. Testa o código e as questões (node tests/check.js).
+  2. Se passar, publica no Cloudflare Pages. Em cerca de 1 minuto a versão nova está no ar.
+- Pull requests rodam os mesmos testes e ganham um endereço de pré-visualização para testar antes.
+- Para voltar a uma versão anterior: Cloudflare > Workers & Pages > arquiteto-de-bolso > Deployments > Rollback.
+
+SEGREDOS NECESSÁRIOS NO GITHUB (Settings > Secrets and variables > Actions)
+- CLOUDFLARE_API_TOKEN: token com a permissão "Cloudflare Pages: Edit".
+- CLOUDFLARE_ACCOUNT_ID: ID da conta Cloudflare (aparece na página inicial do painel).
+
+AO LANÇAR UMA VERSÃO NOVA
+- Troque o nome do cache em sw.js (arquiteto-vN) para os aparelhos pegarem a versão nova.
+- O progresso fica no aparelho e, com login Google, também no Firebase.

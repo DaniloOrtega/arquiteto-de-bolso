@@ -1,0 +1,57 @@
+name: Testar e publicar
+
+# Cada push na main publica em https://arquiteto-de-bolso.pages.dev.
+# Pull requests rodam os testes e ganham um endereço de pré-visualização.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: publicar-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  testar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Testar questões e código
+        run: node tests/check.js
+
+  publicar:
+    needs: testar
+    runs-on: ubuntu-latest
+    # PRs vindos de forks não recebem os segredos, então não publicam.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: read
+      deployments: write
+    env:
+      HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Montar a pasta do site
+        run: |
+          mkdir -p dist
+          cp -r index.html sw.js manifest.webmanifest icons dist/
+      - name: Avisar que faltam os segredos da Cloudflare
+        if: env.HAS_TOKEN != 'true'
+        run: echo "::warning::Publicação pulada. Crie os segredos CLOUDFLARE_API_TOKEN e CLOUDFLARE_ACCOUNT_ID no repositório."
+      - name: Publicar no Cloudflare Pages
+        if: env.HAS_TOKEN == 'true'
+        id: deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=arquiteto-de-bolso --branch=${{ github.head_ref || github.ref_name }} --commit-dirty=true
+      - name: Endereço publicado
+        if: env.HAS_TOKEN == 'true'
+        run: |
+          echo "Publicado em: ${{ steps.deploy.outputs.deployment-url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.deploy.outputs.deployment-url }}"
