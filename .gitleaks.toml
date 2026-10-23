@@ -1,0 +1,12 @@
+# Configuração do Gitleaks (scan de segredos).
+# Usa todas as regras padrão e libera só o que sabemos que NÃO é segredo.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Chave web do Firebase: é pública por natureza (vai para o navegador de todo visitante). Quem protege os dados são as regras do Firestore e a restrição de domínio da chave no Google Cloud."
+regexes = ['''AIzaSyCRziWwFP9s4tSJ8440ZKzF17NGkhIxk6c''']
+
+[[allowlists]]
+description = "Nomes das chaves do localStorage do jogo (arquiteto-de-bolso.v1, .v2...). Não são senhas."
+regexes = ['''arquiteto-de-bolso\.v\d+''']
