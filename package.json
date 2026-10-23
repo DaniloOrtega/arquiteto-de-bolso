@@ -1,0 +1,14 @@
+{
+  "name": "arquiteto-de-bolso",
+  "private": true,
+  "scripts": {
+    "test": "node tests/check.js",
+    "lint": "eslint ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "eslint": "^9.39.5",
+    "eslint-plugin-html": "^8.2.1",
+    "globals": "^17.13.0"
+  }
+}

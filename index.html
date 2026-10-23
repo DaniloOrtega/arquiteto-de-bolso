@@ -2074,7 +2074,7 @@ var TRAILS={
 };
 var LEVELS={1:"Básico",2:"Intermediário",3:"Avançado",4:"Especialista"};
 var PASS_BY={1:0.75,2:0.875,3:0.875,4:0.875}, LVL_NOTE={1:"8 questões, a última vale o dobro",2:"8 questões · 7 acertos para passar",3:"8 questões · 7 acertos para passar",4:"8 questões · 7 acertos · nível de certificação"};
-var AUTO_MS=4000, PASS_RATIO=0.75, GOAL=30, PLACE_Q=5, PLACE_ALL_Q=2, INT={1:1,2:3,3:7,4:14,5:30};
+var AUTO_MS=4000, GOAL=30, PLACE_Q=5, PLACE_ALL_Q=2, INT={1:1,2:3,3:7,4:14,5:30};
 
 var counters={};
 var QS=RAW.map(function(r){
@@ -3155,7 +3155,7 @@ var CLOUD_OK=/(^|\.)(github\.io|pages\.dev)$/.test(location.hostname)||location.
 var C={ready:false,user:null,fauth:null,fdb:null,profile:{nick:"",groups:[],global:false},busy:false,tab:"week",scope:"global",rank:null,rankLoading:false,sync:"",pushT:null,loaded:false};
 function weekKey(d){d=d||new Date();var x=new Date(d.getFullYear(),d.getMonth(),d.getDate());var dow=(x.getDay()+6)%7;x.setDate(x.getDate()-dow);return dkey(x);}
 function weekXpNow(){return (state.wk&&state.wk.k===weekKey())?state.wk.xp:0;}
-function cleanNick(s){return String(s||"").replace(/[<>&"'`\\\/]/g,"").replace(/\s+/g," ").trim().slice(0,20);}
+function cleanNick(s){return String(s||"").replace(/[<>&"'`\\/]/g,"").replace(/\s+/g," ").trim().slice(0,20);}
 function pubDoc(){return {nick:C.profile.nick||"Arquiteto",xp:state.xp|0,wxp:weekXpNow()|0,wk:weekKey(),streak:streakNow()|0,t:Date.now()};}
 function loadScript(src){return new Promise(function(ok,no){var s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=no;document.head.appendChild(s);});}
 function cloudInit(){
@@ -3196,7 +3196,7 @@ function afterLogin(){
     C.loaded=true; return cloudPush(true);
   }).then(function(){
     C.sync="Salvo na nuvem"; if(!C.profile.nick){view="rank";} render();
-  }).catch(function(e){C.sync="Sem conexão com a nuvem. Seu progresso segue salvo neste aparelho."; if(view==="home"||view==="rank")render();});
+  }).catch(function(){C.sync="Sem conexão com a nuvem. Seu progresso segue salvo neste aparelho."; if(view==="home"||view==="rank")render();});
 }
 function save0(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
 function cloudDirty(){
