@@ -5,7 +5,12 @@ const path = require("path");
 
 const raiz = path.join(__dirname, "..", "..");
 const tipos = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".png": "image/png", ".webmanifest": "application/manifest+json", ".svg": "image/svg+xml" };
-const publicos = ["index.html", "sw.js", "manifest.webmanifest", "icons"];
+// Lista fechada dos arquivos que o site publica. O endereço pedido só serve para
+// procurar nesta lista: ele nunca vira caminho de arquivo (evita path traversal, "../").
+const arquivos = new Map();
+for (const nome of ["index.html", "sw.js", "manifest.webmanifest"]) arquivos.set("/" + nome, path.join(raiz, nome));
+for (const nome of fs.readdirSync(path.join(raiz, "icons"))) arquivos.set("/icons/" + nome, path.join(raiz, "icons", nome));
+arquivos.set("/", arquivos.get("/index.html"));
 
 // Lê os cabeçalhos de "/*" do arquivo _headers.
 const cabecalhos = [];
@@ -19,10 +24,8 @@ for (const linha of fs.readFileSync(path.join(raiz, "_headers"), "utf8").split("
 }
 
 http.createServer((req, res) => {
-  const url = decodeURIComponent(req.url.split("?")[0]);
-  const rel = url === "/" ? "index.html" : url.replace(/^\/+/, "");
-  const arquivo = path.join(raiz, rel);
-  if (!publicos.some((p) => rel === p || rel.startsWith(p + "/")) || !fs.existsSync(arquivo)) {
+  const arquivo = arquivos.get(req.url.split("?")[0]);
+  if (!arquivo) {
     res.writeHead(404); return res.end();
   }
   cabecalhos.forEach(([k, v]) => res.setHeader(k, v));
