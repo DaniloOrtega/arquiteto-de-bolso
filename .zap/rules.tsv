@@ -1,0 +1,2 @@
+# Regras do OWASP ZAP: o que fazer com cada tipo de alerta (IGNORE, WARN ou FAIL).
+# Formato: id<TAB>ação<TAB>motivo. Alertas fora desta lista seguem o padrão do ZAP (WARN).
