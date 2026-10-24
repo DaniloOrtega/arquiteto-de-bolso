@@ -32,16 +32,19 @@ jobs:
       - name: Analisar
         if: env.SONAR_TOKEN != ''
         uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0
-      # Lista os problemas abertos da main no resumo da execução (Actions > SonarCloud > Summary),
-      # para ver tudo sem sair do GitHub. Roda mesmo se o portão reprovar.
+      # Lista os problemas abertos no resumo da execução (Actions > SonarCloud > Summary), para ver
+      # tudo sem sair do GitHub: num PR, os problemas novos do PR; na main, todos. Roda mesmo se o portão reprovar.
       - name: Resumo dos problemas
         if: always() && env.SONAR_TOKEN != ''
+        env:
+          PR: ${{ github.event.pull_request.number }}
         run: |
+          if [[ -n "$PR" ]]; then filtro="pullRequest=$PR"; onde="no PR #$PR"; else filtro="branch=main"; onde="na main"; fi
           curl -fsS -H "Authorization: Bearer ${SONAR_TOKEN}" \
-            "https://sonarcloud.io/api/issues/search?componentKeys=DaniloOrtega_arquiteto-de-bolso&branch=main&resolved=false&ps=500" \
+            "https://sonarcloud.io/api/issues/search?componentKeys=DaniloOrtega_arquiteto-de-bolso&${filtro}&resolved=false&ps=500" \
             -o problemas.json
           {
-            echo "## SonarCloud: $(jq .total problemas.json) problemas abertos na main"
+            echo "## SonarCloud: $(jq .total problemas.json) problemas abertos $onde"
             echo
             echo "| Tipo | Gravidade | Arquivo:linha | Regra | O que é |"
             echo "| --- | --- | --- | --- | --- |"
