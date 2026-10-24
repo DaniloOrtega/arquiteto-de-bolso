@@ -26,6 +26,12 @@ SEGREDOS NECESSÁRIOS NO GITHUB (Settings > Secrets and variables > Actions)
 - CLOUDFLARE_ACCOUNT_ID: ID da conta Cloudflare (aparece na página inicial do painel).
 - SONAR_TOKEN: token do SonarCloud (sonarcloud.io > My Account > Security).
 
+CSP (QUEM PODE RODAR SCRIPT NA PÁGINA)
+- O _headers tem a política e a marca HASHES_DOS_SCRIPTS. Na publicação, ferramentas/csp.js troca a
+  marca pelo hash de cada <script> do index.html. Mexeu no script? Nada a fazer: o hash é recalculado.
+- Vai carregar algo de um site novo (outra biblioteca, outra fonte)? Inclua o endereço na CSP do _headers,
+  senão o navegador bloqueia. O teste E2E falha se a CSP bloquear algo da própria página.
+
 AO LANÇAR UMA VERSÃO NOVA
 - Troque o nome do cache em sw.js (arquiteto-vN) para os aparelhos pegarem a versão nova.
 - O progresso fica no aparelho e, com login Google, também no Firebase.

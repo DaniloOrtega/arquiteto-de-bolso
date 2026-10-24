@@ -28,7 +28,7 @@ export default [
     languageOptions: { globals: globals.serviceworker },
   },
   {
-    files: ["tests/**/*.js", "playwright.config.js"],
+    files: ["tests/**/*.js", "ferramentas/**/*.js", "playwright.config.js"],
     languageOptions: { sourceType: "commonjs", globals: globals.node },
   },
   {

@@ -7,7 +7,11 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=(), usb=()
   Cross-Origin-Opener-Policy: same-origin-allow-popups
-  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://www.gstatic.com https://fonts.googleapis.com https://fonts.gstatic.com; frame-src https://arquiteto-de-bolso-83ac0.firebaseapp.com https://accounts.google.com https://apis.google.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  # CSP (Content Security Policy): a lista do que a página pode carregar e de onde. Agora ela BLOQUEIA.
+  # Scripts: só os nossos (pelo hash, que a esteira calcula em ferramentas/csp.js), o Firebase (gstatic)
+  # e o login do Google. Estilos ainda aceitam 'unsafe-inline' porque o app usa style="..." no HTML;
+  # CSS injetado é bem menos perigoso que script injetado.
+  Content-Security-Policy: default-src 'self'; script-src 'self' HASHES_DOS_SCRIPTS https://www.gstatic.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://www.gstatic.com https://fonts.googleapis.com https://fonts.gstatic.com; frame-src https://arquiteto-de-bolso-83ac0.firebaseapp.com https://accounts.google.com https://apis.google.com; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests
 
 # O manifesto do app precisa do tipo certo (o ZAP apontou que vinha sem).
 /manifest.webmanifest

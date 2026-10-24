@@ -117,6 +117,8 @@ jobs:
         run: |
           mkdir -p dist
           cp -r index.html sw.js manifest.webmanifest icons _headers dist/
+          # Preenche a CSP com o hash de cada <script> do index.html (ver ferramentas/csp.js).
+          node ferramentas/csp.js dist/_headers dist/index.html
       - name: Avisar que faltam os segredos da Cloudflare
         if: env.HAS_TOKEN != 'true'
         run: echo "::warning::Publicação pulada. Crie os segredos CLOUDFLARE_API_TOKEN e CLOUDFLARE_ACCOUNT_ID no repositório."
