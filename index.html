@@ -2898,7 +2898,7 @@ function diagItem(x,mode){
 
 /* ---------- Tela ---------- */
 var app=document.getElementById("app");
-function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}
 var toastTimer=null;
 function toast(msg){
   var el=document.getElementById("toast"); el.textContent=msg; el.hidden=false;
