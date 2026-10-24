@@ -11,8 +11,10 @@ const MARCA = "HASHES_DOS_SCRIPTS";
 // Só os <script> escritos dentro da página (os com src="" já são cobertos pelos endereços da política).
 function hashesDosScripts(html) {
   const hashes = [];
-  for (const m of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) {
-    hashes.push("'sha256-" + crypto.createHash("sha256").update(m[1], "utf8").digest("base64") + "'");
+  // Aceita <SCRIPT>, atributos e "</script >": um script que escapasse daqui ficaria sem hash e seria bloqueado.
+  for (const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script[^>]*>/gi)) {
+    if (/\bsrc\s*=/i.test(m[1])) continue;
+    hashes.push("'sha256-" + crypto.createHash("sha256").update(m[2], "utf8").digest("base64") + "'");
   }
   return hashes;
 }
