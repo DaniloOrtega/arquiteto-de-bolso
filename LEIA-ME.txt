@@ -12,7 +12,7 @@ COMO O SITE É PUBLICADO (automático, pela esteira .github/workflows/publicar.y
   5. Publicar: manda para o Cloudflare Pages e confere o site no ar (tests/site_no_ar.sh).
   6. DAST: o OWASP ZAP ataca o endereço publicado por fora. Relatório nos anexos da execução.
 - Em paralelo, o CodeQL (codeql.yml) faz o SAST, o SonarCloud (sonarcloud.yml) dá a nota de
-  qualidade do código e o Dependabot abre PRs de atualização.
+  qualidade do código, o firestore.yml testa as regras do banco e o Dependabot abre PRs de atualização.
 - Push na main publica em produção; PR ganha um endereço de pré-visualização.
 - De hora em hora, monitor.yml confere o site e abre uma issue se ele cair.
 - Para voltar a uma versão anterior: Cloudflare > Workers & Pages > arquiteto-de-bolso > Deployments > Rollback.
@@ -31,6 +31,16 @@ CSP (QUEM PODE RODAR SCRIPT NA PÁGINA)
   marca pelo hash de cada <script> do index.html. Mexeu no script? Nada a fazer: o hash é recalculado.
 - Vai carregar algo de um site novo (outra biblioteca, outra fonte)? Inclua o endereço na CSP do _headers,
   senão o navegador bloqueia. O teste E2E falha se a CSP bloquear algo da própria página.
+
+REGRAS DO FIRESTORE (QUEM PODE LER E ESCREVER O QUÊ NO BANCO)
+- As regras moram em firestore/firestore.rules. Não edite mais pelo console do Firebase: a esteira
+  sobrescreve o que estiver lá a cada push na main.
+- firestore/regras.test.js testa cada regra no emulador do Firestore (precisa de Java 21):
+  npm ci --prefix firestore e depois npm test --prefix firestore.
+- Na main, o job "Publicar regras" manda as regras para o Firebase. Ele entra no Google Cloud sem
+  chave guardada (Workload Identity Federation) e só roda se existir a variável GCP_WIF_PROVIDER
+  (Settings > Secrets and variables > Actions > aba Variables). A conta de serviço usada é
+  esteira-regras@arquiteto-de-bolso-83ac0.iam.gserviceaccount.com, que só pode mexer em regras.
 
 AO LANÇAR UMA VERSÃO NOVA
 - Troque o nome do cache em sw.js (arquiteto-vN) para os aparelhos pegarem a versão nova.

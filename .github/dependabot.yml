@@ -11,6 +11,14 @@ updates:
     groups:
       ferramentas:
         patterns: ["*"]
+  - package-ecosystem: npm
+    directory: /firestore
+    schedule:
+      interval: weekly
+      day: monday
+    groups:
+      regras:
+        patterns: ["*"]
   - package-ecosystem: github-actions
     directory: /
     schedule:

@@ -1,0 +1,81 @@
+name: Firestore
+
+# Regras do Firestore (quem pode ler e escrever o quê no banco do jogo).
+#   Regras: testa firestore/firestore.rules no emulador em todo push e PR.
+#   Publicar regras: na main, manda as regras testadas para o Firebase.
+#     Entra no Google Cloud sem senha guardada: o GitHub prova quem é (OIDC) e o Google
+#     troca isso por um acesso de 1 hora a uma conta de serviço que só mexe em regras
+#     (Workload Identity Federation). Só funciona a partir da main deste repositório.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  regras:
+    name: Regras (Firestore)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: firestore/package-lock.json
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Instalar as bibliotecas de teste
+        run: npm ci --ignore-scripts --prefix firestore
+      - name: Testar as regras no emulador
+        run: npm test --prefix firestore
+
+  publicar-regras:
+    name: Publicar regras
+    needs: regras
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # para o GitHub emitir a prova de identidade (OIDC)
+    env:
+      PROJETO: arquiteto-de-bolso-83ac0
+      PROVEDOR: ${{ vars.GCP_WIF_PROVIDER }}
+    steps:
+      - name: Avisar que falta configurar o acesso ao Google Cloud
+        if: env.PROVEDOR == ''
+        run: echo "::warning::Regras não publicadas. Crie a variável GCP_WIF_PROVIDER (ver LEIA-ME)."
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: env.PROVEDOR != ''
+      - name: Entrar no Google Cloud (sem chave guardada)
+        if: env.PROVEDOR != ''
+        id: gcp
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: esteira-regras@arquiteto-de-bolso-83ac0.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_lifetime: 300s
+      - name: Publicar as regras no Firebase
+        if: env.PROVEDOR != ''
+        env:
+          TOKEN: ${{ steps.gcp.outputs.access_token }}
+        run: |
+          api="https://firebaserules.googleapis.com/v1/projects/${PROJETO}"
+          # 1. Cria um "ruleset" com o conteúdo do arquivo (o Firebase confere a sintaxe aqui).
+          jq -n --rawfile regras firestore/firestore.rules \
+            '{source: {files: [{name: "firestore.rules", content: $regras}]}}' > ruleset.json
+          nome=$(curl -fsS --proto "=https" -X POST -H "Authorization: Bearer ${TOKEN}" \
+            -H "Content-Type: application/json" --data @ruleset.json "${api}/rulesets" | jq -r .name)
+          echo "Ruleset criado: ${nome}"
+          # 2. Aponta o banco para esse ruleset (é aqui que as regras passam a valer).
+          jq -n --arg r "${nome}" --arg rel "projects/${PROJETO}/releases/cloud.firestore" \
+            '{release: {name: $rel, rulesetName: $r}}' > release.json
+          curl -fsS --proto "=https" -X PATCH -H "Authorization: Bearer ${TOKEN}" \
+            -H "Content-Type: application/json" --data @release.json "${api}/releases/cloud.firestore" > /dev/null
+          echo "::notice::Regras do Firestore publicadas (${nome})."

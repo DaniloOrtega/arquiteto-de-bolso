@@ -1,0 +1,60 @@
+rules_version = '2';
+// Regras do Firestore do Arquiteto de Bolso.
+// A chave do Firebase é pública por natureza: quem protege os dados são estas regras.
+// Testadas no emulador (firestore/regras.test.js) e publicadas pela esteira a cada push na main.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signed() { return request.auth != null; }
+
+    // O que vai para o ranking (geral ou de turma): só estes campos, com limites.
+    // O apelido não aceita caracteres de HTML, uma segunda barreira além do filtro do app.
+    function okPub() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['nick', 'xp', 'wxp', 'wk', 'streak', 't'])
+        && d.nick is string && d.nick.size() >= 1 && d.nick.size() <= 20
+        && d.nick.matches('[^<>&"`\'\\\\/]+')
+        && d.xp is int && d.xp >= 0 && d.xp <= 2000000
+        && d.wxp is int && d.wxp >= 0 && d.wxp <= 20000
+        && d.streak is int && d.streak >= 0 && d.streak <= 5000
+        && d.wk is string && d.wk.size() == 10
+        && (!('t' in d) || d.t is int);
+    }
+
+    // Progresso de cada jogador: só o dono lê e escreve.
+    match /users/{uid} {
+      allow read, delete: if signed() && request.auth.uid == uid;
+      allow create, update: if signed() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['state', 'profile', 'updated'])
+        && (!('state' in request.resource.data)
+            || (request.resource.data.state is string && request.resource.data.state.size() <= 500000));
+    }
+
+    // Turmas: quem tem o código consegue abrir (get), mas ninguém lista todas.
+    // Só cria (nunca sobrescreve a turma de outro: não há regra de update).
+    match /groups/{code} {
+      allow get: if signed();
+      allow create: if signed()
+        && code.matches('[A-HJ-NP-Z2-9]{6}')
+        && request.resource.data.keys().hasOnly(['name', 'owner', 'created'])
+        && request.resource.data.owner == request.auth.uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 2 && request.resource.data.name.size() <= 20
+        && request.resource.data.created == request.time;
+
+      // Ranking da turma: só quem está na turma vê; cada um mexe só na própria linha.
+      match /members/{uid} {
+        allow read: if signed() && exists(/databases/$(database)/documents/groups/$(code)/members/$(request.auth.uid));
+        allow create, update: if signed() && request.auth.uid == uid && okPub()
+          && exists(/databases/$(database)/documents/groups/$(code));
+        allow delete: if signed() && request.auth.uid == uid;
+      }
+    }
+
+    // Ranking geral: quem está logado vê; cada um mexe só na própria linha.
+    match /global/{uid} {
+      allow read: if signed();
+      allow create, update: if signed() && request.auth.uid == uid && okPub();
+      allow delete: if signed() && request.auth.uid == uid;
+    }
+  }
+}

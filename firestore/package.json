@@ -1,0 +1,15 @@
+{
+  "name": "arquiteto-firestore-regras",
+  "private": true,
+  "description": "Testes das regras do Firestore no emulador. Fica separado para n\u00e3o pesar na instala\u00e7\u00e3o do site.",
+  "scripts": {
+    "test": "bash testar.sh"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "5.0.2",
+    "firebase": "12.19.0"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "1.14.6"
+  }
+}
