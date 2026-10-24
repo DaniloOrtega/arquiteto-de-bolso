@@ -2630,7 +2630,7 @@ var state=load();
    "impressão digital" do conteúdo) e volta sozinha quando a questão for corrigida no código. */
 function qHash(q){
   var t=JSON.stringify([q.q,q.o||q.items||q.pairs||q.slots,q.extra||null,q.e]), h=5381;
-  for(var i=0;i<t.length;i++)h=((h<<5)+h+t.charCodeAt(i))|0; // NOSONAR: o "|0" aqui é de propósito, mantém o hash em 32 bits (Math.trunc não faz isso)
+  for(var i=0;i<t.length;i++)h=Math.imul(h,33)+t.charCodeAt(i); // mesmo hash de antes (h*33+c em 32 bits), sem o "|0"
   return (h>>>0).toString(36);
 }
 function isHidden(id){var f=state.flagged&&state.flagged[id]; return !!(f&&!f.off);}
