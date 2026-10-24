@@ -3156,7 +3156,8 @@ var C={ready:false,user:null,fauth:null,fdb:null,profile:{nick:"",groups:[],glob
 function weekKey(d){d=d||new Date();var x=new Date(d.getFullYear(),d.getMonth(),d.getDate());var dow=(x.getDay()+6)%7;x.setDate(x.getDate()-dow);return dkey(x);}
 function weekXpNow(){return (state.wk&&state.wk.k===weekKey())?state.wk.xp:0;}
 function cleanNick(s){return String(s||"").replace(/[<>&"'`\\/]/g,"").replace(/\s+/g," ").trim().slice(0,20);}
-function pubDoc(){return {nick:C.profile.nick||"Arquiteto",xp:state.xp|0,wxp:weekXpNow()|0,wk:weekKey(),streak:streakNow()|0,t:Date.now()};}
+function int0(v){var n=Number(v);return Number.isFinite(n)?Math.trunc(n):0;}
+function pubDoc(){return {nick:C.profile.nick||"Arquiteto",xp:int0(state.xp),wxp:int0(weekXpNow()),wk:weekKey(),streak:int0(streakNow()),t:Date.now()};}
 function loadScript(src){return new Promise(function(ok,no){var s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=no;document.head.appendChild(s);});}
 function cloudInit(){
   if(!CLOUD_OK||!navigator.onLine&&false)return;
@@ -3193,7 +3194,7 @@ function afterLogin(){
       if(o.profile){C.profile={nick:cleanNick(o.profile.nick),groups:Array.isArray(o.profile.groups)?o.profile.groups.slice(0,10):[],global:!!o.profile.global};}
       if(o.state){try{var cs=JSON.parse(o.state); state=mergeStates(state,normalize(cs)); save0();}catch(e){}}
     }
-    C.loaded=true; return cloudPush(true);
+    C.loaded=true; return cloudPush();
   }).then(function(){
     C.sync="Salvo na nuvem"; if(!C.profile.nick){view="rank";} render();
   }).catch(function(){C.sync="Sem conexão com a nuvem. Seu progresso segue salvo neste aparelho."; if(view==="home"||view==="rank")render();});
@@ -3201,7 +3202,7 @@ function afterLogin(){
 function save0(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
 function cloudDirty(){
   if(!C.user||!C.loaded)return;
-  clearTimeout(C.pushT); C.pushT=setTimeout(function(){cloudPush(false).then(function(){C.sync="Salvo na nuvem";var el=document.getElementById("syncs");if(el)el.textContent=C.sync;}).catch(function(){C.sync="Falha ao salvar na nuvem. Tento de novo na próxima lição.";var el=document.getElementById("syncs");if(el)el.textContent=C.sync;});},4000);
+  clearTimeout(C.pushT); C.pushT=setTimeout(function(){cloudPush().then(function(){C.sync="Salvo na nuvem";var el=document.getElementById("syncs");if(el)el.textContent=C.sync;}).catch(function(){C.sync="Falha ao salvar na nuvem. Tento de novo na próxima lição.";var el=document.getElementById("syncs");if(el)el.textContent=C.sync;});},4000);
 }
 function cloudPush(){
   if(!C.user||!C.fdb)return Promise.resolve();
@@ -3225,7 +3226,7 @@ function cloudLogin(){
 function cloudLogout(){C.fauth.signOut().then(function(){view="home";toast("Você saiu. Seu progresso continua neste aparelho.");render();});}
 function rankRows(list,tab){
   var wk=weekKey();
-  return list.map(function(m){return {nick:cleanNick(m.nick)||"Arquiteto",xp:tab==="week"?(m.wk===wk?(m.wxp|0):0):(m.xp|0),streak:m.streak|0,me:!!(C.user&&m._id===C.user.uid)};})
+  return list.map(function(m){return {nick:cleanNick(m.nick)||"Arquiteto",xp:tab==="week"?(m.wk===wk?int0(m.wxp):0):int0(m.xp),streak:int0(m.streak),me:!!(C.user&&m._id===C.user.uid)};})
     .filter(function(m){return tab!=="week"||m.xp>0||m.me;}).sort(function(a,b){return b.xp-a.xp;}).slice(0,50);
 }
 function loadRank(){
