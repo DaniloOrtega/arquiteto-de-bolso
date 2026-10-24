@@ -5,7 +5,7 @@ import html from "eslint-plugin-html";
 import globals from "globals";
 
 export default [
-  { ignores: ["node_modules/", "dist/", "playwright-report/", "test-results/"] },
+  { ignores: ["**/node_modules/", "dist/", "playwright-report/", "test-results/"] },
   js.configs.recommended,
   {
     rules: {
@@ -28,7 +28,7 @@ export default [
     languageOptions: { globals: globals.serviceworker },
   },
   {
-    files: ["tests/**/*.js", "ferramentas/**/*.js", "playwright.config.js"],
+    files: ["tests/**/*.js", "ferramentas/**/*.js", "firestore/**/*.js", "playwright.config.js"],
     languageOptions: { sourceType: "commonjs", globals: globals.node },
   },
   {

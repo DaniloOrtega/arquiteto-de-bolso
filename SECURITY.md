@@ -13,5 +13,6 @@ Use a aba **Security > Report a vulnerability** deste repositório para avisar e
 | SCA (bibliotecas) | Dependabot, Dependency Review | Security > Dependabot e o próprio PR |
 | Segredos | Gitleaks, secret scanning do GitHub | Actions > Esteira > Segredos |
 | Cabeçalhos e CSP | `_headers` na Cloudflare Pages, hashes dos scripts por `ferramentas/csp.js` | Actions > Esteira > Publicar |
+| Regras do banco | `firestore/firestore.rules` testadas no emulador, publicadas sem chave guardada (OIDC) | Actions > Firestore |
 | DAST (site no ar) | OWASP ZAP | Actions > Esteira > DAST (relatório em anexo) |
 | Monitoramento | checagem de hora em hora | Actions > Monitoramento e issues |
