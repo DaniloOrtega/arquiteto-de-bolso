@@ -9,12 +9,13 @@ const fail = (m) => errors.push(m);
 const m = html.match(/<script>\n\(function\(\)\{([\s\S]*?)\n\}\)\(\);\n<\/script>/);
 if (!m) { console.error("Script principal não encontrado no index.html"); process.exit(1); }
 const code = m[1];
-try { new Function(code); } catch (e) { console.error("Erro de sintaxe no script: " + e.message); process.exit(1); }
+// new Function roda código do nosso próprio index.html, nunca de quem usa o site (por isso o NOSONAR).
+try { new Function(code); } catch (e) { console.error("Erro de sintaxe no script: " + e.message); process.exit(1); } // NOSONAR
 
 // Roda só a parte de dados (até a criação do BYID) para inspecionar as questões.
 const cut = code.indexOf("/* ---------- Sons e voz");
 const data = code.slice(0, cut > 0 ? cut : code.indexOf("/* ---------- Estado"));
-const D = new Function(data + "\nreturn {RAW, XRAW: typeof XRAW!=='undefined'?XRAW:[], BRAW: typeof BRAW!=='undefined'?BRAW:[], TEMAS, TRAILS, TRAIL_ORDER, QS, BYID};")();
+const D = new Function(data + "\nreturn {RAW, XRAW: typeof XRAW!=='undefined'?XRAW:[], BRAW: typeof BRAW!=='undefined'?BRAW:[], TEMAS, TRAILS, TRAIL_ORDER, QS, BYID};")(); // NOSONAR
 
 const groups = {};
 D.RAW.forEach((r, i) => {

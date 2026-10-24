@@ -1,0 +1,52 @@
+name: SonarCloud
+
+# Qualidade do código: o SonarCloud lê o código e aponta bugs, trechos duplicados,
+# "code smells" (código que funciona, mas é difícil de manter) e pontos sensíveis de segurança.
+# Dá uma nota de A a E e um "portão de qualidade": se o código novo piorar, o check fica vermelho.
+# Resultado em https://sonarcloud.io/project/overview?id=DaniloOrtega_arquiteto-de-bolso
+# e, nos PRs, num comentário do próprio SonarCloud.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualidade:
+    name: Qualidade (SonarCloud)
+    runs-on: ubuntu-latest
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    steps:
+      # PRs do Dependabot e de forks não recebem segredos: sem o token, o job só avisa e passa.
+      - name: Conferir o token
+        if: env.SONAR_TOKEN == ''
+        run: echo "::notice::SONAR_TOKEN não disponível aqui (Dependabot, fork ou segredo ainda não criado). Análise pulada."
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: env.SONAR_TOKEN != ''
+        with:
+          fetch-depth: 0 # histórico completo: o SonarCloud precisa dele para saber o que é código novo
+      - name: Analisar
+        if: env.SONAR_TOKEN != ''
+        uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0
+      # Lista os problemas abertos no resumo da execução (Actions > SonarCloud > Summary), para ver
+      # tudo sem sair do GitHub: num PR, os problemas novos do PR; na main, todos. Roda mesmo se o portão reprovar.
+      - name: Resumo dos problemas
+        if: always() && env.SONAR_TOKEN != ''
+        env:
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          if [[ -n "$PR" ]]; then filtro="pullRequest=$PR"; onde="no PR #$PR"; else filtro="branch=main"; onde="na main"; fi
+          curl -fsS -H "Authorization: Bearer ${SONAR_TOKEN}" \
+            "https://sonarcloud.io/api/issues/search?componentKeys=DaniloOrtega_arquiteto-de-bolso&${filtro}&resolved=false&ps=500" \
+            -o problemas.json
+          {
+            echo "## SonarCloud: $(jq .total problemas.json) problemas abertos $onde"
+            echo
+            echo "| Tipo | Gravidade | Arquivo:linha | Regra | O que é |"
+            echo "| --- | --- | --- | --- | --- |"
+            jq -r '.issues[] | "| \(.impacts[0].softwareQuality // .type) | \(.impacts[0].severity // .severity) | \(.component | split(":")[1]):\(.line // "-") | \(.rule) | \(.message | gsub("\\|"; "/")) |"' problemas.json
+          } | tee -a "$GITHUB_STEP_SUMMARY"

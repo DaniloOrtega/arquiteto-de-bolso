@@ -9,7 +9,8 @@ function carregarQuestoes() {
   const code = m[1];
   const cut = code.indexOf("/* ---------- Sons e voz");
   const data = code.slice(0, cut > 0 ? cut : code.indexOf("/* ---------- Estado"));
-  return new Function(data + "\nreturn {QS, TRAILS, TRAIL_ORDER};")();
+  // Código do nosso próprio index.html, não de quem usa o site.
+  return new Function(data + "\nreturn {QS, TRAILS, TRAIL_ORDER};")(); // NOSONAR
 }
 
 module.exports = { carregarQuestoes };
