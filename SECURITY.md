@@ -12,6 +12,6 @@ Use a aba **Security > Report a vulnerability** deste repositório para avisar e
 | Qualidade do código | SonarCloud | sonarcloud.io e comentário no PR |
 | SCA (bibliotecas) | Dependabot, Dependency Review | Security > Dependabot e o próprio PR |
 | Segredos | Gitleaks, secret scanning do GitHub | Actions > Esteira > Segredos |
-| Cabeçalhos | `_headers` na Cloudflare Pages | Actions > Esteira > Publicar |
+| Cabeçalhos e CSP | `_headers` na Cloudflare Pages, hashes dos scripts por `ferramentas/csp.js` | Actions > Esteira > Publicar |
 | DAST (site no ar) | OWASP ZAP | Actions > Esteira > DAST (relatório em anexo) |
 | Monitoramento | checagem de hora em hora | Actions > Monitoramento e issues |

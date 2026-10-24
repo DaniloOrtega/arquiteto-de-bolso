@@ -11,10 +11,17 @@ test.beforeEach(async ({ page }) => {
   await page.route(/^https:\/\/(fonts\.(googleapis|gstatic)\.com|www\.gstatic\.com|.*\.googleapis\.com)\//, (r) => r.abort());
   page.erros = [];
   page.on("pageerror", (e) => page.erros.push(e.message));
+  // Guarda tudo que a CSP bloquear. Se um script nosso mudar sem o hash acompanhar, aparece aqui.
+  await page.addInitScript(() => {
+    window.__csp = [];
+    document.addEventListener("securitypolicyviolation", (e) => window.__csp.push(e.violatedDirective + " " + (e.blockedURI || "inline")));
+  });
 });
 
 test.afterEach(async ({ page }) => {
   expect(page.erros, "erros de JavaScript na página").toEqual([]);
+  const bloqueios = page.isClosed() ? [] : await page.evaluate(() => window.__csp || []).catch(() => []);
+  expect(bloqueios, "coisas bloqueadas pela CSP").toEqual([]);
 });
 
 // Responde a pergunta que está na tela. certo=true acerta, certo=false erra de propósito.
@@ -154,4 +161,19 @@ test("questão corrigida volta sozinha para a trilha", async ({ page }) => {
   await page.reload();
   await expect(page.locator("#toast")).toContainText("1 questão corrigida voltou para a trilha.");
   await expect(page.locator(".revcard")).toHaveCount(0);
+});
+
+test("a CSP bloqueia um script injetado na página", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator(`[data-act="toggle"][data-t="${PRIMEIRA}"]`)).toBeVisible();
+  // Simula um ataque XSS: alguém consegue colocar um <script> novo na página.
+  const rodou = await page.evaluate(() => {
+    const s = document.createElement("script");
+    s.textContent = "window.__invasor = true;";
+    document.body.appendChild(s);
+    return window.__invasor === true;
+  });
+  expect(rodou, "o script injetado não pode rodar").toBe(false);
+  await expect.poll(() => page.evaluate(() => window.__csp.length)).toBeGreaterThan(0);
+  await page.evaluate(() => { window.__csp = []; }); // bloqueio esperado, não conta como falha
 });

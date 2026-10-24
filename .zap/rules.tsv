@@ -7,7 +7,7 @@
 10019	FAIL	(Content-Type ausente: corrigido para o manifest no _headers)
 10040	FAIL	(Conteúdo misto HTTP dentro de HTTPS)
 10037	FAIL	(Servidor revelando tecnologia no X-Powered-By)
-10038	WARN	(CSP ainda em modo só-relatório; vira FAIL quando a CSP for travada)
+10038	FAIL	(CSP: travada no _headers, não pode sumir)
 10015	IGNORE	(Cache-Control: site estático e público, sem dado privado em cache)
 10049	IGNORE	(Conteúdo não armazenável: informativo)
 10098	IGNORE	(Access-Control-Allow-Origin * da Cloudflare: conteúdo público, sem cookies nem login no mesmo domínio)

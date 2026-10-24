@@ -17,9 +17,12 @@ erro() { echo "::error::$1"; falhas=$((falhas + 1)); }
 
 [[ "$code" == "200" ]] || erro "O site respondeu HTTP $code"
 grep -q "Arquiteto de Bolso" "$body" || erro "A página não tem o texto 'Arquiteto de Bolso'"
-for h in strict-transport-security x-content-type-options x-frame-options referrer-policy permissions-policy content-security-policy-report-only; do
+for h in strict-transport-security x-content-type-options x-frame-options referrer-policy permissions-policy content-security-policy; do
   grep -qi "^$h:" "$headers" || erro "Falta o cabeçalho $h"
 done
+
+grep -qi "^content-security-policy:.*sha256-" "$headers" || erro "A CSP não tem os hashes dos scripts"
+grep -q "HASHES_DOS_SCRIPTS" "$headers" && erro "A CSP saiu com a marca HASHES_DOS_SCRIPTS sem preencher"
 
 if [[ "$falhas" -gt 0 ]]; then exit 1; fi
 echo "OK: $URL no ar, com conteúdo e cabeçalhos de segurança."
