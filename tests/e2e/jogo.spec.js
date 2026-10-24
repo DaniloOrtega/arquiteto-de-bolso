@@ -112,3 +112,46 @@ test("o app funciona offline depois da primeira visita", async ({ page, context 
   await expect(page.locator('[data-act="toggle"]')).toHaveCount(TRAIL_ORDER.length);
   await context.setOffline(false);
 });
+
+test("reportar tira a questão da trilha e ela aparece em revisão", async ({ page }) => {
+  await page.goto("/");
+  await abrirTrilha(page);
+  await page.locator(`[data-act="lesson"][data-t="${PRIMEIRA}"][data-l="1"]`).click();
+  const enunciado = (await page.locator(".qtext").textContent()).trim();
+  const q = QS.find((x) => x.t === PRIMEIRA && x.q === enunciado);
+
+  await page.locator('[data-act="flag"]').click();
+  await page.locator("#flagnote").fill("A alternativa certa parece errada");
+  await page.locator('[data-act="flag-yes"]').click();
+  // A lição segue sem ela: uma questão a menos e outro enunciado na tela.
+  await expect(page.locator(".count")).toContainText("1/7");
+  await expect(page.locator(".qtext")).not.toHaveText(enunciado);
+
+  await page.locator('[data-act="home"]').first().click();
+  await expect(page.locator(".revcard")).toContainText("1 questão em revisão");
+  await page.locator('.revcard [data-act="rev-open"]').click();
+  await expect(page.locator("#app")).toContainText(enunciado);
+  await expect(page.locator("#app")).toContainText("A alternativa certa parece errada");
+  const link = await page.locator('a.btnlink').getAttribute("href");
+  expect(link).toContain("github.com/DaniloOrtega/arquiteto-de-bolso/issues/new");
+  expect(decodeURIComponent(link)).toContain(q.id);
+  await page.screenshot({ path: "tests/e2e/telas/revisao.png", fullPage: true });
+
+  // Devolver à trilha tira da lista.
+  await page.locator('[data-act="unflag"]').click();
+  await expect(page.locator("#app")).toContainText("Nenhuma questão em revisão");
+});
+
+test("questão corrigida volta sozinha para a trilha", async ({ page }) => {
+  const q = QS.find((x) => x.t === PRIMEIRA && x.l === 1 && !x.type);
+  await page.goto("/");
+  // Simula uma questão reportada antes da correção (impressão digital antiga).
+  await page.evaluate((id) => {
+    const s = JSON.parse(localStorage.getItem("arquiteto-de-bolso.v2") || "{}");
+    s.xp = s.xp || 0; s.prog = s.prog || {}; s.flagged = { [id]: { h: "antiga", note: "", at: 1 } };
+    localStorage.setItem("arquiteto-de-bolso.v2", JSON.stringify(s));
+  }, q.id);
+  await page.reload();
+  await expect(page.locator("#toast")).toContainText("1 questão corrigida voltou para a trilha.");
+  await expect(page.locator(".revcard")).toHaveCount(0);
+});
