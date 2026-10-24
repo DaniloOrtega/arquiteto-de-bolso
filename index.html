@@ -402,6 +402,16 @@ body{
 .vrow input[type=range]{width:100%;accent-color:var(--accent)}
 .tips{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px;font-weight:600;font-size:14px}
 .vlink{align-self:center;font-size:13px;padding:4px 0;min-height:36px}
+/* ===== v18: questões em revisão ===== */
+.qmeta{align-items:center}
+.flagbtn{margin-left:auto;display:inline-flex;align-items:center;gap:4px;background:none;border:1px solid var(--line);border-radius:99px;padding:4px 10px;min-height:32px;font-weight:800;font-size:12px;color:var(--ink-2)}
+.flagbtn .ico{width:15px;height:15px}
+.flagbox{display:flex;flex-direction:column;gap:8px;border:2px solid var(--bad);background:var(--bad-bg);border-radius:16px;padding:12px}
+.flagbox .row{display:flex;gap:8px}
+.flagbox .row button{flex:1}
+.btnlink{display:flex;align-items:center;justify-content:center;text-align:center;text-decoration:none;box-sizing:border-box}
+.revq{font-weight:800;margin:0}
+.revcard .row2{display:flex;align-items:center;justify-content:space-between;gap:12px}
 </style>
 
 <main id="app" aria-live="polite"></main>
@@ -2586,7 +2596,7 @@ function speakTerm(x,t){ if(FL[t])say([{x:x,l:FL[t]}]); }
 
 /* ---------- Estado e armazenamento ---------- */
 var KEY="arquiteto-de-bolso.v2", OLD_KEY="arquiteto-de-bolso.v1";
-function defaults(){var p={};TRAIL_ORDER.forEach(function(t){p[t]={};});return {xp:0,streak:0,last:null,day:null,dayXp:0,placed:{},prog:p,review:{},stats:{},wk:{k:"",xp:0}};}
+function defaults(){var p={};TRAIL_ORDER.forEach(function(t){p[t]={};});return {xp:0,streak:0,last:null,day:null,dayXp:0,placed:{},prog:p,review:{},stats:{},wk:{k:"",xp:0},flagged:{}};}
 function normalize(o){
   var d=defaults();
   if(o&&typeof o==="object"){
@@ -2594,6 +2604,7 @@ function normalize(o){
     TRAIL_ORDER.forEach(function(t){ if(!d.prog[t]||typeof d.prog[t]!=="object") d.prog[t]={}; });
     var np={}; if(d.placed&&typeof d.placed==="object"){ TRAIL_ORDER.forEach(function(t){ if(d.placed[t]>=1&&d.placed[t]<=4) np[t]=d.placed[t]; }); } d.placed=np;
     if(!d.review||typeof d.review!=="object") d.review={}; if(!d.stats||typeof d.stats!=="object") d.stats={};
+    if(!d.flagged||typeof d.flagged!=="object") d.flagged={};
   }
   return d;
 }
@@ -2613,6 +2624,27 @@ function restoreCode(txt){
   }catch(e){return false;}
 }
 var state=load();
+
+/* ---------- Questões em revisão ----------
+   O jogador pode tirar da trilha uma questão que parece errada. Ela fica guardada (com uma
+   "impressão digital" do conteúdo) e volta sozinha quando a questão for corrigida no código. */
+function qHash(q){
+  var t=JSON.stringify([q.q,q.o||q.items||q.pairs||q.slots,q.extra||null,q.e]), h=5381;
+  for(var i=0;i<t.length;i++)h=((h<<5)+h+t.charCodeAt(i))|0;
+  return (h>>>0).toString(36);
+}
+function isHidden(id){var f=state.flagged&&state.flagged[id]; return !!(f&&!f.off);}
+function flaggedList(){return Object.keys(state.flagged||{}).filter(function(id){return isHidden(id)&&BYID[id];});}
+function flagQ(q,note){state.flagged[q.id]={h:qHash(q),note:String(note||"").slice(0,300),at:Date.now()}; save();}
+function unflagQ(id){var f=state.flagged[id]; if(f){f.off=true; f.at=Date.now(); save();}}
+var fixedOnLoad=0;
+(function autoReturn(){
+  Object.keys(state.flagged||{}).forEach(function(id){
+    var f=state.flagged[id]; if(!f||f.off)return;
+    if(!BYID[id]||qHash(BYID[id])!==f.h){f.off=true; f.fixed=true; f.at=Date.now(); fixedOnLoad++;}
+  });
+  if(fixedOnLoad){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+})();
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){} if(typeof cloudDirty==="function")cloudDirty();}
 
 function pad(n){return String(n).padStart(2,"0");}
@@ -2626,7 +2658,7 @@ function dayXpNow(){return state.day===dkey()?state.dayXp:0;}
    Erro: volta hoje (caixa 0). Acerto: sobe uma caixa e só volta após 1, 3, 7, 14 e 30 dias. */
 function dueIds(){
   var t=dkey();
-  return Object.keys(state.review).filter(function(id){return BYID[id]&&state.review[id].due<=t;})
+  return Object.keys(state.review).filter(function(id){return BYID[id]&&!isHidden(id)&&state.review[id].due<=t;})
     .sort(function(a,b){var x=state.review[a],y=state.review[b]; if((x.box===0)!==(y.box===0))return x.box===0?-1:1; return x.due<y.due?-1:(x.due>y.due?1:0);});
 }
 function dueCounts(){var ids=dueIds(),e=0;ids.forEach(function(id){if(state.review[id].box===0)e++;});return {total:ids.length,err:e,fresh:ids.length-e};}
@@ -2647,7 +2679,7 @@ function newSess(mode,extra){
   return s;
 }
 function startLesson(t,l){
-  var group=QS.filter(function(q){return q.t===t&&q.l===l;});
+  var group=QS.filter(function(q){return q.t===t&&q.l===l&&!isHidden(q.id);});
   var plain=shuffle(group.filter(function(q){return !q.boss&&!q.type;}));
   var xs=shuffle(group.filter(function(q){return q.type&&q.type!=="build";})).slice(0,1).concat(group.filter(function(q){return q.type==="build";}).slice(0,1));
   var body=shuffle(plain.slice(0,Math.max(0,plain.length-xs.length)).concat(xs));
@@ -2677,10 +2709,10 @@ function startPlacementAll(){
 function pickPlacement(t){
   var s=sess, want=s.ptr[t], order=[want,want+1,want-1,want+2,want-2].filter(function(l){return l>=1&&l<=4;});
   for(var n=0;n<order.length;n++){
-    var c=QS.filter(function(q){return q.t===t&&q.l===order[n]&&!q.boss&&!s.used[q.id];});
+    var c=QS.filter(function(q){return q.t===t&&q.l===order[n]&&!q.boss&&!s.used[q.id]&&!isHidden(q.id);});
     if(c.length){var q=c[Math.floor(Math.random()*c.length)];s.used[q.id]=1;return q;}
   }
-  var any=QS.filter(function(q){return q.t===t&&!s.used[q.id];});
+  var any=QS.filter(function(q){return q.t===t&&!s.used[q.id]&&!isHidden(q.id);}); if(!any.length)any=QS.filter(function(q){return q.t===t&&!isHidden(q.id);});
   var q2=any[Math.floor(Math.random()*any.length)]; s.used[q2.id]=1; return q2;
 }
 function loadQ(){
@@ -2698,7 +2730,7 @@ function loadQ(){
     s.bopts=shuffle(q.slots.map(function(x){return x.a;}).concat(q.extra));
     s.place=q.slots.map(function(){return -1;}); s.bsel=0;
   }else s.opts=shuffle(q.o.map(function(t,k){return {t:t,ok:k===0};}));
-  s.locked=false; s.pick=null; s.ok=false; s.gain=0; stopVoice();
+  s.locked=false; s.pick=null; s.ok=false; s.gain=0; s.flagUI=false; stopVoice();
   render(); window.scrollTo(0,0);
 }
 function pick(i){
@@ -2766,6 +2798,46 @@ function mTap(side,i){
   }
   sfx("tap"); render();
 }
+function flagOpen(){
+  var s=sess; if(!s)return;
+  if(s.timer){clearTimeout(s.timer);s.timer=null;} s.held=true; s.flagUI=true; render();
+  var ta=document.getElementById("flagnote"); if(ta&&ta.scrollIntoView)ta.scrollIntoView({block:"center"});
+}
+function flagConfirm(){
+  var s=sess; if(!s)return;
+  var ta=document.getElementById("flagnote"), q=s.cur;
+  flagQ(q,ta?ta.value:""); s.flagUI=false; stopVoice();
+  toast("Questão tirada da trilha. Ela volta quando for corrigida.");
+  if(s.locked){next();return;}
+  if(s.mode==="placement"){loadQ();return;}
+  s.qs.splice(s.i,1); s.total=s.qs.length;
+  if(s.i>=s.total){ if(s.total)finish(); else {view="home";sess=null;render();} } else loadQ();
+}
+function revIssueURL(ids){
+  var lines=["Questões que tirei da trilha para revisão:",""];
+  ids.forEach(function(id){var q=BYID[id], f=state.flagged[id];
+    lines.push("- `"+id+"` ("+TRAILS[q.t].name+", "+LEVELS[q.l]+"): "+q.q+(f.note?"\n  - Comentário: "+f.note:""));});
+  var body=lines.join("\n"); if(body.length>6000)body=body.slice(0,6000)+"\n\n(lista cortada: use \"Copiar lista\" para o resto)";
+  return "https://github.com/DaniloOrtega/arquiteto-de-bolso/issues/new?title="+encodeURIComponent("Questões para revisão ("+ids.length+")")+"&labels=revisao&body="+encodeURIComponent(body);
+}
+function revText(ids){
+  return ids.map(function(id){var q=BYID[id], f=state.flagged[id]; return id+" | "+TRAILS[q.t].name+" "+LEVELS[q.l]+" | "+q.q+(f.note?" | Comentário: "+f.note:"");}).join("\n");
+}
+function renderRev(){
+  var ids=flaggedList().sort();
+  var h='<div class="qtop"><button class="ghost" data-act="home">Voltar</button><div class="brand" style="font-size:20px">Questões em revisão</div></div>';
+  h+='<section class="card"><p class="muted">Estas questões saíram das trilhas, da revisão e do nivelamento. Quando a correção for publicada, cada uma volta sozinha. Você também pode devolver uma questão agora.</p>';
+  if(!ids.length){h+='<p class="muted"><b>Nenhuma questão em revisão.</b> Para reportar, toque em "Reportar" no topo de uma questão.</p></section>';app.innerHTML=h;return;}
+  h+='<a class="primary btnlink" href="'+esc(revIssueURL(ids))+'" target="_blank" rel="noopener">Enviar para correção (GitHub)</a>'+
+     '<button class="secondary" data-act="rev-copy">Copiar lista</button><p class="fine">O botão do GitHub abre uma issue já preenchida. É só tocar em "Submit new issue", e o Claude corrige a partir dela.</p></section>';
+  ids.forEach(function(id){
+    var q=BYID[id], f=state.flagged[id];
+    h+='<section class="card tc" style="--h:'+HUES[q.t]+'"><span class="label">'+esc(TRAILS[q.t].name)+' · '+LEVELS[q.l]+' · '+esc(id)+'</span>'+
+       '<p class="revq">'+esc(q.q)+'</p>'+(f.note?'<p class="muted">Seu comentário: '+esc(f.note)+'</p>':'')+
+       '<button class="linkbtn" data-act="unflag" data-id="'+esc(id)+'">Devolver à trilha</button></section>';
+  });
+  app.innerHTML=h;
+}
 function next(){
   var s=sess; if(s.timer){clearTimeout(s.timer);s.timer=null;} s.i++;
   if(s.i>=s.total)finish(); else loadQ();
@@ -2809,7 +2881,7 @@ function missedTemas(ids){
   return Object.keys(m).map(function(key){var p=key.split("."); return {t:p[0],k:p[1],n:m[key],name:TEMAS[p[0]][p[1]].n,dica:TEMAS[p[0]][p[1]].d};}).sort(function(a,b){return b.n-a.n;}).slice(0,3);
 }
 function startTrain(t,k){
-  var pool=QS.filter(function(q){return q.t===t&&q.k===k;});
+  var pool=QS.filter(function(q){return q.t===t&&q.k===k&&!isHidden(q.id);});
   var wrong=shuffle(pool.filter(function(q){var r=state.review[q.id];return r&&r.box===0;}));
   var fresh=shuffle(pool.filter(function(q){return !state.review[q.id];}));
   var rest=shuffle(pool.filter(function(q){var r=state.review[q.id];return r&&r.box>0;}));
@@ -2861,6 +2933,7 @@ var ICONS={
  vol:'<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4.5 4.5 0 010 6M18 6.5a8 8 0 010 11"/>',
  mute:'<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/>',
  speak:'<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4.5 4.5 0 010 6"/><path d="M18 6.5a8 8 0 010 11"/>',
+ flag:'<path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/>',
  star:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>'
 };
 function ico(n,c){return '<svg class="ico'+(c?' '+c:'')+'" viewBox="0 0 24 24" aria-hidden="true">'+ICONS[n]+'</svg>';}
@@ -2884,6 +2957,8 @@ function renderHome(){
      '<circle class="fg" cx="38" cy="38" r="32" fill="none" stroke-width="8" stroke-linecap="round" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+(C*(1-pctG/100)).toFixed(1)+'"/></svg><b>'+pctG+'%</b></div></section>';
 
   h+=cloudCard();
+  var nRev=flaggedList().length;
+  if(nRev)h+='<section class="card revcard"><div class="row2"><span><b>'+nRev+(nRev===1?' questão em revisão':' questões em revisão')+'</b><br><span class="fine">Fora das trilhas até serem corrigidas.</span></span><button class="secondary" data-act="rev-open" style="width:auto">Ver</button></div></section>';
   if(state.xp===0&&!Object.keys(state.placed).length){
     h+='<section class="card intro tc" style="--h:25"><span class="tbadge">'+ico("star")+'</span><div style="display:flex;flex-direction:column;gap:10px;flex:1;min-width:0"><h2>Por onde começar</h2><p class="muted">Faça o nivelamento geral ('+(PLACE_ALL_Q*GEN_ORDER.length)+' perguntas) para liberar o seu nível nas 12 trilhas básicas. As trilhas novas (proposta, integração, governança, IA e espanhol) têm teste próprio dentro de cada uma.</p><button class="primary" data-act="placement-all">Fazer o nivelamento geral</button></div></section>';
   }
@@ -2928,6 +3003,7 @@ function renderHome(){
   h+='<footer class="foot"><p>Material de estudo independente, sem vínculo com AWS, Microsoft, Oracle ou outro fornecedor. As questões são originais e foram escritas a partir de conceitos de arquitetura; não são questões de prova. Confira detalhes na documentação oficial antes de usá-los em decisões reais.</p>'+
      '<p>O progresso fica salvo neste aparelho'+(CLOUD_OK?' (e na nuvem, se você entrar com o Google)':'')+'. Para guardar uma cópia ou levar para outro aparelho, use o backup.</p>'+
      (showBackup?'<textarea id="bk" class="bk" rows="4" aria-label="Código de backup"></textarea><div class="row"><button class="secondary" data-act="bk-copy">Copiar código</button><button class="secondary" data-act="bk-restore">Restaurar deste texto</button></div>':'<button class="linkbtn" data-act="bk-open">Backup do progresso</button>')+
+     '<button class="linkbtn" data-act="rev-open">Questões em revisão'+(flaggedList().length?' ('+flaggedList().length+')':'')+'</button>'+
      (TTS?'<button class="linkbtn" data-act="voz">Escolher a voz da leitura</button>':'')+
      '<button class="linkbtn" data-act="snd">'+(prefs.sound?'Sons: ligados (toque para desligar)':'Sons: desligados (toque para ligar)')+'</button>'+
      '<button class="linkbtn" data-act="placement-all">Refazer o nivelamento geral</button>'+(confirmReset?'<div class="row"><button class="secondary" data-act="reset-yes">Confirmar: apagar progresso</button><button class="secondary" data-act="reset-no">Cancelar</button></div>'
@@ -2999,6 +3075,7 @@ function renderQuiz(){
   var h='<div class="qtop tc" style="--h:'+HUES[q.t]+'"><button class="ghost" data-act="home">Sair</button><div class="track"><i style="width:'+pct+'%"></i></div><span class="count">'+(s.i+1)+'/'+s.total+'</span>'+
     '<button class="ghost icob" data-act="snd" aria-pressed="'+(prefs.sound?"true":"false")+'" aria-label="'+(prefs.sound?"Desligar os sons":"Ligar os sons")+'" title="'+(prefs.sound?"Sons ligados":"Sons desligados")+'">'+ico(prefs.sound?"vol":"mute","sm")+'</button></div>';
   h+='<section class="card qcard"><div class="qmeta"><span class="label">'+esc(label)+'</span>'+
+    '<button class="flagbtn" data-act="flag" aria-label="Reportar esta questão" title="Reportar esta questão">'+ico("flag","sm")+'Reportar</button>'+
     (q.type?'<span class="xtag">'+({order:"Ordene",match:"Ligue os pares",build:"Monte a arquitetura"})[q.type]+'</span>':'')+
     (s.mode==="lesson"&&q.boss?'<span class="boss">Questão-chefe · XP em dobro</span>':'')+'</div>';
   h+='<div class="qrow"><p class="qtext">'+esc(q.q)+'</p>'+(TTS?'<button class="ghost icob" data-act="speak" aria-label="Ouvir a pergunta" title="Ouvir a pergunta">'+ico("speak","sm")+'</button>':'')+'</div>';
@@ -3012,6 +3089,9 @@ function renderQuiz(){
     });
     h+='</div>';
   }
+  if(s.flagUI)h+='<div class="flagbox"><b>Tirar esta questão da trilha?</b><p class="fine">Ela vai para "Questões em revisão" e volta sozinha quando for corrigida.</p>'+
+     '<textarea id="flagnote" class="txt" rows="3" maxlength="300" placeholder="O que parece errado? (opcional)"></textarea>'+
+     '<div class="row"><button class="primary" data-act="flag-yes">Tirar da trilha</button><button class="secondary" data-act="flag-no">Cancelar</button></div></div>';
   if(TTS&&!answered)h+='<button class="linkbtn vlink" data-act="voz">Voz ruim? Trocar a voz</button>';
   h+='</section>';
   if(answered){
@@ -3081,7 +3161,7 @@ function renderVoz(){
 }
 function render(){
   app.style.paddingBottom="";
-  if(view==="quiz"&&sess)renderQuiz(); else if(view==="result"&&res)renderResult(); else if(view==="rank")renderRank(); else if(view==="voz")renderVoz(); else {view="home";renderHome();}
+  if(view==="quiz"&&sess)renderQuiz(); else if(view==="result"&&res)renderResult(); else if(view==="rank")renderRank(); else if(view==="voz")renderVoz(); else if(view==="rev")renderRev(); else {view="home";renderHome();}
 }
 
 app.addEventListener("change",function(e){var t=e.target, a0=t&&t.getAttribute&&t.getAttribute("data-act");
@@ -3123,6 +3203,15 @@ app.addEventListener("click",function(e){
   else if(a==="b-slot")bSlot(Number(b.getAttribute("data-i")));
   else if(a==="b-chip")bChip(Number(b.getAttribute("data-i")));
   else if(a==="voz"){view="voz";render();window.scrollTo(0,0);}
+  else if(a==="flag")flagOpen();
+  else if(a==="flag-no"){if(sess){sess.flagUI=false;render();}}
+  else if(a==="flag-yes")flagConfirm();
+  else if(a==="rev-open"){view="rev";render();window.scrollTo(0,0);}
+  else if(a==="unflag"){unflagQ(b.getAttribute("data-id")); render(); toast("Questão devolvida à trilha.");}
+  else if(a==="rev-copy"){
+    var txt=revText(flaggedList().sort()), okc=function(){toast("Lista copiada. Cole na conversa com o Claude.");}, noc=function(){toast("Não consegui copiar sozinho.");};
+    try{ if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(okc,noc); else noc(); }catch(err){noc();}
+  }
   else if(a==="voice-test"){var l0=b.getAttribute("data-l"); VOZ_LANGS.forEach(function(L){if(L[0]===l0)say([{x:L[2],l:l0}]);});}
   else if(a==="voice-reset"){prefs.voice={}; prefs.rate=1; savePrefs(); render(); toast("Vozes recomendadas restauradas.");}
   else if(a==="ord-add")ordTap(Number(b.getAttribute("data-i")),true);
@@ -3182,6 +3271,8 @@ function mergeStates(a,b){
   r.review={}; Object.keys(ids).forEach(function(i){var x=a.review[i],y=b.review[i]; r.review[i]=!x?y:(!y?x:(x.due>=y.due?x:y));});
   var ks={};Object.keys(a.stats||{}).concat(Object.keys(b.stats||{})).forEach(function(k){ks[k]=1;});
   r.stats={}; Object.keys(ks).forEach(function(k){var x=a.stats[k]||{r:0,w:0},y=b.stats[k]||{r:0,w:0}; r.stats[k]={r:Math.max(x.r||0,y.r||0),w:Math.max(x.w||0,y.w||0)};});
+  var fa=a.flagged||{}, fb=b.flagged||{}, fk={}; Object.keys(fa).concat(Object.keys(fb)).forEach(function(i){fk[i]=1;});
+  r.flagged={}; Object.keys(fk).forEach(function(i){var x=fa[i],y=fb[i]; r.flagged[i]=!x?y:(!y?x:((x.at||0)>=(y.at||0)?x:y));});
   var wa=a.wk||{k:"",xp:0},wb=b.wk||{k:"",xp:0}; r.wk=wa.k>wb.k?wa:(wb.k>wa.k?wb:{k:wa.k,xp:Math.max(wa.xp||0,wb.xp||0)});
   return r;
 }
@@ -3316,6 +3407,7 @@ function renderRank(){
 window.__game={QS:QS,state:function(){return state;},C:C,merge:mergeStates,go:function(v){view=v;render();}};
 cloudInit();
 render();
+if(fixedOnLoad)setTimeout(function(){toast(fixedOnLoad===1?"1 questão corrigida voltou para a trilha.":fixedOnLoad+" questões corrigidas voltaram para as trilhas.");},600);
 })();
 </script>
 
