@@ -2,7 +2,7 @@ name: Firestore
 
 # Regras do Firestore (quem pode ler e escrever o quê no banco do jogo).
 #   Regras: testa firestore/firestore.rules no emulador em todo push e PR.
-#   Publicar regras: na main, manda as regras testadas para o Firebase.
+#   Publicar regras: na main (push ou botão "Run workflow"), manda as regras testadas para o Firebase.
 #     Entra no Google Cloud sem senha guardada: o GitHub prova quem é (OIDC) e o Google
 #     troca isso por um acesso de 1 hora a uma conta de serviço que só mexe em regras
 #     (Workload Identity Federation). Só funciona a partir da main deste repositório.
@@ -38,7 +38,7 @@ jobs:
   publicar-regras:
     name: Publicar regras
     needs: regras
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     permissions:
       contents: read
