@@ -5,6 +5,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signed() { return request.auth != null; }
+    // Administrador do app: vê a lista de quem usa (tela "Quem está usando").
+    function admin() {
+      return signed() && request.auth.token.email == 'danilo18.ortega@gmail.com'
+        && request.auth.token.email_verified == true;
+    }
 
     // O que vai para o ranking (geral ou de turma): só estes campos, com limites.
     // O apelido não aceita caracteres de HTML, uma segunda barreira além do filtro do app.
@@ -27,6 +32,24 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['state', 'profile', 'updated'])
         && (!('state' in request.resource.data)
             || (request.resource.data.state is string && request.resource.data.state.size() <= 500000));
+    }
+
+    // Quem está usando: cada jogador mantém a própria linha (nome, e-mail, último acesso e números).
+    // Só o administrador lê a lista. O e-mail tem que ser o da conta e o horário é o do servidor.
+    match /seen/{uid} {
+      allow read: if admin();
+      allow delete: if signed() && (request.auth.uid == uid || admin());
+      allow create, update: if signed() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['name', 'email', 'last', 'xp', 'wxp', 'wk', 'streak', 'levels', 'v'])
+        && request.resource.data.name is string && request.resource.data.name.size() <= 80
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.last == request.time
+        && request.resource.data.xp is int && request.resource.data.xp >= 0 && request.resource.data.xp <= 2000000
+        && request.resource.data.wxp is int && request.resource.data.wxp >= 0 && request.resource.data.wxp <= 20000
+        && request.resource.data.wk is string && request.resource.data.wk.size() == 10
+        && request.resource.data.streak is int && request.resource.data.streak >= 0 && request.resource.data.streak <= 5000
+        && request.resource.data.levels is int && request.resource.data.levels >= 0 && request.resource.data.levels <= 200
+        && request.resource.data.v is string && request.resource.data.v.size() <= 20;
     }
 
     // Turmas: quem tem o código consegue abrir (get), mas ninguém lista todas.

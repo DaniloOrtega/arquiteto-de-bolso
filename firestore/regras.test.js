@@ -22,6 +22,11 @@ beforeEach(async () => { await env.clearFirestore(); });
 const ana = () => env.authenticatedContext("ana").firestore();
 const beto = () => env.authenticatedContext("beto").firestore();
 const anonimo = () => env.unauthenticatedContext().firestore();
+const ADMIN = { email: "danilo18.ortega@gmail.com", email_verified: true };
+const chefe = () => env.authenticatedContext("chefe", ADMIN).firestore();
+const anaG = () => env.authenticatedContext("ana", { email: "ana@exemplo.com", email_verified: true }).firestore();
+// Igual ao seenDoc() do index.html.
+const visto = (extra = {}) => ({ name: "Ana Souza", email: "ana@exemplo.com", last: serverTimestamp(), xp: 120, wxp: 40, wk: "2026-10-26", streak: 3, levels: 2, v: "v19", ...extra });
 // Igual ao pubDoc() do index.html.
 const pub = (extra = {}) => ({ nick: "Ana", xp: 120, wxp: 40, wk: "2026-10-19", streak: 3, t: 1761264000000, ...extra });
 // A operação tem que ser barrada pelas regras (e não falhar por outro motivo).
@@ -121,4 +126,32 @@ test("o jogador sai da turma", async () => {
     await setDoc(doc(db, "groups/ABC234/members/beto"), pub());
   });
   await assert.doesNotReject(deleteDoc(doc(beto(), "groups/ABC234/members/beto")));
+});
+
+// ---------- Quem está usando (seen) ----------
+test("o jogador registra o próprio acesso", async () => {
+  await assert.doesNotReject(setDoc(doc(anaG(), "seen/ana"), visto()));
+});
+test("só o administrador vê a lista de quem usa", async () => {
+  await semRegras((db) => setDoc(doc(db, "seen/ana"), { name: "Ana" }));
+  await assert.doesNotReject(getDocs(query(collection(chefe(), "seen"), limit(300))));
+  await assert.rejects(getDocs(query(collection(anaG(), "seen"), limit(300))), negado);
+  await assert.rejects(getDoc(doc(anaG(), "seen/ana")), negado);
+  await assert.rejects(getDocs(query(collection(anonimo(), "seen"), limit(300))), negado);
+});
+test("e-mail do administrador sem verificação não vale", async () => {
+  const falso = env.authenticatedContext("falso", { email: "danilo18.ortega@gmail.com", email_verified: false }).firestore();
+  await assert.rejects(getDocs(query(collection(falso, "seen"), limit(300))), negado);
+});
+test("ninguém registra acesso com e-mail, horário ou linha de outro", async () => {
+  await assert.rejects(setDoc(doc(anaG(), "seen/ana"), visto({ email: "outro@exemplo.com" })), negado);
+  await assert.rejects(setDoc(doc(anaG(), "seen/ana"), visto({ last: 1 })), negado);
+  await assert.rejects(setDoc(doc(anaG(), "seen/beto"), visto()), negado);
+  await assert.rejects(setDoc(doc(anaG(), "seen/ana"), visto({ admin: true })), negado);
+  await assert.rejects(setDoc(doc(anaG(), "seen/ana"), visto({ xp: 9999999 })), negado);
+});
+test("o jogador apaga o próprio registro de acesso", async () => {
+  await semRegras((db) => setDoc(doc(db, "seen/ana"), { name: "Ana" }));
+  await assert.rejects(deleteDoc(doc(beto(), "seen/ana")), negado);
+  await assert.doesNotReject(deleteDoc(doc(anaG(), "seen/ana")));
 });

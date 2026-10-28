@@ -155,6 +155,28 @@ p{margin:0}
 .chip{display:flex;align-items:center;gap:6px;padding:6px 12px 6px 10px;border:1px solid var(--line);border-radius:99px;background:var(--surface);font-family:var(--f-mono);font-weight:500;font-size:15px;font-variant-numeric:tabular-nums;box-shadow:var(--shadow)}
 .chip.fire .ico{color:var(--flame);fill:var(--flame);fill-opacity:.25}
 .chip.xp .ico{color:var(--accent);fill:var(--accent);fill-opacity:.25}
+.chip.heart .ico,.hearts .ico,.hline .ico{color:var(--bad);fill:var(--bad);fill-opacity:.35}
+.hearts{display:flex;align-items:center;gap:4px;font-family:var(--f-mono);font-weight:500;font-size:14px;font-variant-numeric:tabular-nums}
+.hline{display:flex;align-items:center;gap:8px;margin:0 4px 14px;font-size:14px;color:var(--ink-2)}
+.combo{display:inline-flex;align-items:center;gap:4px;font-family:var(--f-mono);font-size:12px;font-weight:500;color:var(--flame)}
+.combo .ico{fill:var(--flame);fill-opacity:.3}
+.xtag.again{background:var(--bad-bg);color:var(--bad)}
+.stars{font-size:40px;letter-spacing:6px;color:#E8A317;line-height:1;margin-bottom:6px}
+.broken .ico{width:44px;height:44px;color:var(--bad);fill:var(--bad);fill-opacity:.2}
+.lvl-side .st{color:#E8A317;font-size:15px;letter-spacing:1px}
+.gains{list-style:none;padding:0;margin:8px 0;font-family:var(--f-mono);font-size:14px}
+.gains li{padding:2px 0}
+.gate{margin-top:12vh;text-align:center}
+.gate .brand{font-size:30px;margin-bottom:10px}
+.stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;margin-bottom:12px}
+.stats3 b{display:block;font-size:28px;font-family:var(--f-mono)}
+.stats3 span{font-size:13px;color:var(--ink-2)}
+.ulist{list-style:none;padding:0;margin:0}
+.ulist li{padding:10px 0;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+.ulist li:last-child{border-bottom:0}
+.un{display:flex;flex-direction:column;min-width:0}
+.un .fine{overflow-wrap:anywhere;margin:0}
+.um{display:flex;flex-wrap:wrap;gap:4px 14px;font-family:var(--f-mono);font-size:12px;color:var(--ink-2)}
 .hero{display:flex;flex-direction:row;align-items:center;gap:16px;padding:16px}
 .hero-txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
 .hero-big{font-family:var(--f-display);font-weight:800;font-size:30px;line-height:1.1;font-variant-numeric:tabular-nums}
@@ -2083,7 +2105,9 @@ var TRAILS={
   esp:{name:"Espanhol técnico de TI",tag:"NUBE · CAÍDA · PLAZO",desc:"Vocabulário de TI e frases de reunião e proposta em espanhol."}
 };
 var LEVELS={1:"Básico",2:"Intermediário",3:"Avançado",4:"Especialista"};
-var PASS_BY={1:0.75,2:0.875,3:0.875,4:0.875}, LVL_NOTE={1:"8 questões, a última vale o dobro",2:"8 questões · 7 acertos para passar",3:"8 questões · 7 acertos para passar",4:"8 questões · 7 acertos · nível de certificação"};
+var PASS_BY={1:0.75,2:0.875,3:0.875,4:0.875}, LVL_NOTE={1:"8 questões · a última vale o dobro",2:"8 questões · 3 estrelas sem erros",3:"8 questões · 3 estrelas sem erros",4:"8 questões · nível de certificação"};
+/* Vidas: cada erro numa lição custa 1. Volta 1 a cada 30 minutos, ou com revisão e lição perfeita. */
+var MAX_H=5, H_MS=30*60*1000, COMBO_AT=3, COMBO_XP=2, PERFECT_XP=15, RETRY_XP=5;
 var AUTO_MS=4000, GOAL=30, PLACE_Q=5, PLACE_ALL_Q=2, INT={1:1,2:3,3:7,4:14,5:30};
 
 var counters={};
@@ -2596,7 +2620,7 @@ function speakTerm(x,t){ if(FL[t])say([{x:x,l:FL[t]}]); }
 
 /* ---------- Estado e armazenamento ---------- */
 var KEY="arquiteto-de-bolso.v2", OLD_KEY="arquiteto-de-bolso.v1";
-function defaults(){var p={};TRAIL_ORDER.forEach(function(t){p[t]={};});return {xp:0,streak:0,last:null,day:null,dayXp:0,placed:{},prog:p,review:{},stats:{},wk:{k:"",xp:0},flagged:{}};}
+function defaults(){var p={};TRAIL_ORDER.forEach(function(t){p[t]={};});return {xp:0,streak:0,last:null,day:null,dayXp:0,placed:{},prog:p,review:{},stats:{},wk:{k:"",xp:0},flagged:{},hearts:{n:MAX_H,at:Date.now(),u:0}};}
 function normalize(o){
   var d=defaults();
   if(o&&typeof o==="object"){
@@ -2605,6 +2629,7 @@ function normalize(o){
     var np={}; if(d.placed&&typeof d.placed==="object"){ TRAIL_ORDER.forEach(function(t){ if(d.placed[t]>=1&&d.placed[t]<=4) np[t]=d.placed[t]; }); } d.placed=np;
     if(!d.review||typeof d.review!=="object") d.review={}; if(!d.stats||typeof d.stats!=="object") d.stats={};
     if(!d.flagged||typeof d.flagged!=="object") d.flagged={};
+    var hh=d.hearts; if(!hh||typeof hh!=="object"||!(hh.n>=0&&hh.n<=MAX_H)||typeof hh.at!=="number") d.hearts={n:MAX_H,at:Date.now(),u:0}; else d.hearts={n:Math.floor(hh.n),at:hh.at,u:Number(hh.u)||0};
   }
   return d;
 }
@@ -2647,6 +2672,21 @@ var fixedOnLoad=0;
 })();
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){} if(typeof cloudDirty==="function")cloudDirty();}
 
+/* ---------- Vidas ---------- */
+function heartsNow(){
+  var h=state.hearts, now=Date.now();
+  if(h.n>=MAX_H){h.n=MAX_H; h.at=now; return h.n;}
+  if(h.at>now)h.at=now;
+  var k=Math.floor((now-h.at)/H_MS);
+  if(k>0){h.n=Math.min(MAX_H,h.n+k); h.at=h.n>=MAX_H?now:h.at+k*H_MS;}
+  return h.n;
+}
+function heartMins(){heartsNow(); return Math.max(1,Math.ceil((state.hearts.at+H_MS-Date.now())/60000));}
+function loseHeart(){heartsNow(); state.hearts.n=Math.max(0,state.hearts.n-1); state.hearts.u=Date.now();}
+function gainHeart(){var was=heartsNow(); if(was>=MAX_H)return false; state.hearts.n++; if(state.hearts.n>=MAX_H)state.hearts.at=Date.now(); state.hearts.u=Date.now(); return true;}
+function heartsLine(){var n=heartsNow(); return n>=MAX_H?"Vidas cheias":(n+" de "+MAX_H+" vidas · mais 1 em "+heartMins()+" min");}
+function starStr(n){var o="";for(var i=1;i<=3;i++)o+=(i<=n?"★":"☆");return o;}
+
 function pad(n){return String(n).padStart(2,"0");}
 function dkey(d){d=d||new Date();return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());}
 function addDays(k,n){var p=k.split("-").map(Number);return dkey(new Date(p[0],p[1]-1,p[2]+n));}
@@ -2674,7 +2714,7 @@ var bkText="", openTrails={};
 var view="home", sess=null, res=null, confirmReset=false, showBackup=false;
 
 function newSess(mode,extra){
-  var s={mode:mode,i:0,right:0,xpGain:0,missed:[],locked:false,pick:null,opts:[],cur:null,gain:0,total:0};
+  var s={mode:mode,i:0,right:0,xpGain:0,missed:[],locked:false,pick:null,opts:[],cur:null,gain:0,total:0,combo:0,bestCombo:0,solved:0,dead:false,again:false};
   for(var k in extra)s[k]=extra[k];
   return s;
 }
@@ -2685,6 +2725,7 @@ function startLesson(t,l){
   var body=shuffle(plain.slice(0,Math.max(0,plain.length-xs.length)).concat(xs));
   var boss=group.filter(function(q){return q.boss;});
   var qs=body.concat(boss);
+  if(heartsNow()<1){toast("Sem vidas. Volta 1 em "+heartMins()+" min, ou faça uma revisão para ganhar uma.");return;}
   sess=newSess("lesson",{t:t,l:l,qs:qs,total:qs.length});
   view="quiz"; loadQ();
 }
@@ -2744,13 +2785,20 @@ function checkX(){
 }
 function grade(ok){
   var s=sess; if(s.locked)return; s.locked=true; s.ok=ok; stopVoice(); sfx(ok?"ok":"bad");
-  var q=s.cur, gain=0;
-  if(ok){s.right++; gain=(s.mode==="lesson")?(q.boss?20:10):5;}
+  var q=s.cur, gain=0, retry=s.mode==="lesson"&&s.missed.indexOf(q.id)>=0;
+  s.again=retry; s.combo=ok?s.combo+1:0; s.bestCombo=Math.max(s.bestCombo,s.combo); s.comboGain=0;
+  if(ok){
+    if(retry){gain=RETRY_XP;} else {s.right++; gain=(s.mode==="lesson")?(q.boss?20:10):5;}
+    if(s.mode!=="placement"&&s.combo>=COMBO_AT){s.comboGain=COMBO_XP; gain+=s.comboGain;}
+    s.solved++;
+  }else if(s.mode==="lesson"){
+    loseHeart(); if(heartsNow()<1)s.dead=true; else s.qs.push(q);
+  }
   s.xpGain+=gain; s.gain=gain;
   if(gain)addXP(gain); else touchDay();
   var sk=q.t+"."+q.k, ss=state.stats[sk]||{r:0,w:0}; if(ok)ss.r++; else ss.w++; state.stats[sk]=ss;
   var r=state.review[q.id], today=dkey();
-  if(!ok){state.review[q.id]={box:0,due:today}; s.missed.push(q.id);}
+  if(!ok){state.review[q.id]={box:0,due:today}; if(s.missed.indexOf(q.id)<0)s.missed.push(q.id);}
   else if(!r||r.due<=today){
     var nb=Math.min(5,(r?r.box:0)+1);
     state.review[q.id]={box:nb,due:addDays(today,INT[nb])};
@@ -2808,10 +2856,12 @@ function flagConfirm(){
   var ta=document.getElementById("flagnote"), q=s.cur;
   flagQ(q,ta?ta.value:""); s.flagUI=false; stopVoice();
   toast("Questão tirada da trilha. Ela volta quando for corrigida.");
-  if(s.locked){next();return;}
-  if(s.mode==="placement"){loadQ();return;}
-  s.qs.splice(s.i,1); s.total=s.qs.length;
-  if(s.i>=s.total){ if(s.total)finish(); else {view="home";sess=null;render();} } else loadQ();
+  if(s.mode==="placement"){if(s.locked)next(); else loadQ();return;}
+  var wasRight=s.locked&&s.ok;
+  for(var k=s.qs.length-1;k>s.i;k--){if(s.qs[k].id===q.id)s.qs.splice(k,1);}
+  if(s.locked){ if(wasRight)s.solved--; s.total--; if(!s.total){view="home";sess=null;render();return;} next(); return; }
+  s.qs.splice(s.i,1); s.total--;
+  if(s.i>=s.qs.length){ if(s.total)finish(); else {view="home";sess=null;render();} } else loadQ();
 }
 function revIssueURL(ids){
   var lines=["Questões que tirei da trilha para revisão:",""];
@@ -2840,16 +2890,19 @@ function renderRev(){
 }
 function next(){
   var s=sess; if(s.timer){clearTimeout(s.timer);s.timer=null;} s.i++;
-  if(s.i>=s.total)finish(); else loadQ();
+  if(s.dead||s.i>=s.qs.length)finish(); else loadQ();
 }
 function finish(){
   var s=sess, r={mode:s.mode,right:s.right,total:s.total,xp:s.xpGain,missed:s.missed.length,missedIds:s.missed.slice(),train:s.train||null,bonus:0};
   if(s.mode==="lesson"){
-    var need=Math.ceil(s.total*PASS_BY[s.l]); r.need=need; r.pass=s.right>=need; r.t=s.t; r.l=s.l;
+    var need=Math.ceil(s.total*PASS_BY[s.l]); r.need=need; r.pass=!s.dead; r.dead=s.dead; r.t=s.t; r.l=s.l; r.combo=s.bestCombo;
+    r.stars=r.pass?(s.missed.length===0?3:(s.right>=need?2:1)):0;
     var p=state.prog[s.t][s.l]||{best:0,done:false}, first=r.pass&&!p.done;
-    p.best=Math.max(p.best,s.right); p.done=p.done||r.pass; state.prog[s.t][s.l]=p;
+    if(r.pass){p.best=Math.max(p.best,s.right); p.stars=Math.max(p.stars||0,r.stars);} p.done=p.done||r.pass; state.prog[s.t][s.l]=p;
     if(first){addXP(20);r.bonus=20;}
+    if(r.stars===3){addXP(PERFECT_XP); r.perfect=PERFECT_XP; r.heart=gainHeart();}
   }
+  if(s.mode==="review"&&s.right>=3)r.heart=gainHeart();
   if(s.mode==="placement"){
     if(!state.placed)state.placed={};
     if(s.all){r.all=true; r.levels=GEN_ORDER.map(function(t){var lv=Math.min(3,s.ptr[t]); state.placed[t]=lv; return [t,lv];});}
@@ -2934,6 +2987,7 @@ var ICONS={
  mute:'<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/>',
  speak:'<path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4.5 4.5 0 010 6"/><path d="M18 6.5a8 8 0 010 11"/>',
  flag:'<path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/>',
+ heart:'<path d="M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z"/>',
  star:'<path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>'
 };
 function ico(n,c){return '<svg class="ico'+(c?' '+c:'')+'" viewBox="0 0 24 24" aria-hidden="true">'+ICONS[n]+'</svg>';}
@@ -2948,7 +3002,7 @@ function renderHome(){
   var dc=dueCounts(), due=dc.total, goalNow=Math.min(GOAL,dayXpNow()), st=streakNow();
   var pctG=Math.round(goalNow/GOAL*100), C=2*Math.PI*32;
   var h='<div class="top"><div class="brand">Arquiteto de <span>Bolso</span></div>'+
-    '<div class="chips"><div class="chip fire" title="Sequência de dias">'+ico("flame","sm")+st+'</div>'+
+    '<div class="chips"><div class="chip heart" title="'+esc(heartsLine())+'">'+ico("heart","sm")+heartsNow()+'</div><div class="chip fire" title="Sequência de dias">'+ico("flame","sm")+st+'</div>'+
     '<div class="chip xp" title="XP total">'+ico("bolt","sm")+state.xp+'</div></div></div>';
   h+='<section class="card hero"><div class="hero-txt"><span class="label">Meta de hoje</span>'+
      '<div class="hero-big">'+goalNow+'<small> / '+GOAL+' XP</small></div>'+
@@ -2956,6 +3010,7 @@ function renderHome(){
      '<div class="ring"><svg viewBox="0 0 76 76"><circle class="bg" cx="38" cy="38" r="32" fill="none" stroke-width="8"/>'+
      '<circle class="fg" cx="38" cy="38" r="32" fill="none" stroke-width="8" stroke-linecap="round" stroke-dasharray="'+C.toFixed(1)+'" stroke-dashoffset="'+(C*(1-pctG/100)).toFixed(1)+'"/></svg><b>'+pctG+'%</b></div></section>';
 
+  if(heartsNow()<MAX_H)h+='<p class="hline">'+ico("heart","sm")+esc(heartsLine())+'. Uma revisão com 3 acertos devolve 1 vida.</p>';
   h+=cloudCard();
   var nRev=flaggedList().length;
   if(nRev)h+='<section class="card revcard"><div class="row2"><span><b>'+nRev+(nRev===1?' questão em revisão':' questões em revisão')+'</b><br><span class="fine">Fora das trilhas até serem corrigidas.</span></span><button class="secondary" data-act="rev-open" style="width:auto">Ver</button></div></section>';
@@ -2989,7 +3044,7 @@ function renderHome(){
       h+='<div class="lvls">';
       [1,2,3,4].forEach(function(l){
         var p=state.prog[t][l], open=unlocked(t,l), stt=p&&p.done?"done":(open?"open":"locked");
-        var side=stt==="done"?"Aprovado "+p.best+"/8":(stt==="locked"?"Bloqueado":(p&&p.best?"Melhor "+p.best+"/8":"Começar"));
+        var side=stt==="done"?'<span class="st" aria-label="'+(p.stars||2)+' de 3 estrelas">'+starStr(p.stars||2)+'</span>':(stt==="locked"?"Bloqueado":"Começar");
         var inner=stt==="done"?ico("check"):(stt==="locked"?ico("lock","sm"):l);
         h+='<button class="lvl" data-act="lesson" data-t="'+t+'" data-l="'+l+'" data-state="'+stt+'">'+
            '<span class="node">'+inner+'</span><span class="lvl-main"><b>'+LEVELS[l]+'</b><small>'+LVL_NOTE[l]+'</small></span>'+
@@ -3071,13 +3126,16 @@ function xSolution(q){
 function renderQuiz(){
   var s=sess, q=s.cur, T=TRAILS[q.t], answered=s.locked;
   var label=s.mode==="placement"?(s.all?"Nivelamento geral · ":"Nivelamento · ")+T.name:(s.mode==="review"?(s.train?"Treino · "+TEMAS[s.train.t][s.train.k].n:"Revisão"):T.name+" · "+LEVELS[q.l]);
-  var pct=Math.round((s.i+(answered?1:0))/s.total*100);
-  var h='<div class="qtop tc" style="--h:'+HUES[q.t]+'"><button class="ghost" data-act="home">Sair</button><div class="track"><i style="width:'+pct+'%"></i></div><span class="count">'+(s.i+1)+'/'+s.total+'</span>'+
+  var pct=s.mode==="lesson"?Math.round(s.solved/Math.max(1,s.total)*100):Math.round((s.i+(answered?1:0))/s.total*100);
+  var h='<div class="qtop tc" style="--h:'+HUES[q.t]+'"><button class="ghost" data-act="home">Sair</button><div class="track"><i style="width:'+pct+'%"></i></div><span class="count">'+(s.i+1)+'/'+s.qs.length+'</span>'+
+    (s.mode==="lesson"?'<span class="hearts" aria-label="'+heartsNow()+' vidas" title="Vidas">'+ico("heart","sm")+heartsNow()+'</span>':'')+
     '<button class="ghost icob" data-act="snd" aria-pressed="'+(prefs.sound?"true":"false")+'" aria-label="'+(prefs.sound?"Desligar os sons":"Ligar os sons")+'" title="'+(prefs.sound?"Sons ligados":"Sons desligados")+'">'+ico(prefs.sound?"vol":"mute","sm")+'</button></div>';
   h+='<section class="card qcard"><div class="qmeta"><span class="label">'+esc(label)+'</span>'+
     '<button class="flagbtn" data-act="flag" aria-label="Reportar esta questão" title="Reportar esta questão">'+ico("flag","sm")+'Reportar</button>'+
     (q.type?'<span class="xtag">'+({order:"Ordene",match:"Ligue os pares",build:"Monte a arquitetura"})[q.type]+'</span>':'')+
-    (s.mode==="lesson"&&q.boss?'<span class="boss">Questão-chefe · XP em dobro</span>':'')+'</div>';
+    (s.mode==="lesson"&&q.boss?'<span class="boss">Questão-chefe · XP em dobro</span>':'')+
+    (s.mode==="lesson"&&s.missed.indexOf(q.id)>=0&&!(answered&&!s.again)?'<span class="xtag again">Segunda chance</span>':'')+
+    (s.combo>=COMBO_AT-1&&!answered?'<span class="combo">'+ico("bolt","sm")+'Sequência de '+s.combo+'</span>':'')+'</div>';
   h+='<div class="qrow"><p class="qtext">'+esc(q.q)+'</p>'+(TTS?'<button class="ghost icob" data-act="speak" aria-label="Ouvir a pergunta" title="Ouvir a pergunta">'+ico("speak","sm")+'</button>':'')+'</div>';
   if(q.type){h+=xBody(s,q,answered);}
   else{
@@ -3097,11 +3155,11 @@ function renderQuiz(){
   if(answered){
     var ok=s.ok, auto=ok&&!s.held;
     h+='<div class="fb sheet '+(ok?"good":"bad")+'" id="fb">'+(auto?'<span class="cd" style="animation-duration:'+AUTO_MS+'ms"></span>':'')+
-       '<div class="fbh"><b>'+(ok?"Correto!"+(s.gain?" +"+s.gain+" XP":""):"Não foi dessa vez.")+'</b>'+(TTS?'<button class="ghost icob" data-act="speak-e" aria-label="Ouvir a explicação" title="Ouvir a explicação">'+ico("speak","sm")+'</button>':'')+'</div>'+
+       '<div class="fbh"><b>'+(ok?"Correto!"+(s.gain?" +"+s.gain+" XP":""):"Não foi dessa vez.")+'</b>'+(ok&&s.comboGain?'<span class="combo">Sequência de '+s.combo+'</span>':'')+(TTS?'<button class="ghost icob" data-act="speak-e" aria-label="Ouvir a explicação" title="Ouvir a explicação">'+ico("speak","sm")+'</button>':'')+'</div>'+
        (!ok&&q.type?xSolution(q):'')+
        '<p data-act="hold">'+esc(q.e)+'</p>'+
-       (ok?(auto?'<p class="hint">Avança sozinho. Toque no texto para pausar e ler com calma.</p>':''):'<p class="hint">Esta questão vai para a sua revisão de erros.</p>')+
-       '<button class="primary" data-act="next">'+(s.i+1>=s.total?"Ver resultado":"Continuar")+'</button></div>';
+       (ok?(auto?'<p class="hint">Avança sozinho. Toque no texto para pausar e ler com calma.</p>':''):'<p class="hint">'+(s.mode!=="lesson"?'Esta questão vai para a sua revisão de erros.':(s.dead?'Você perdeu a última vida. A lição termina aqui.':'Você perdeu 1 vida. Esta questão volta no fim da lição.'))+'</p>')+
+       '<button class="primary" data-act="next">'+(s.dead||s.i+1>=s.qs.length?"Ver resultado":"Continuar")+'</button></div>';
   }
   app.innerHTML=h;
   var fbx=document.getElementById("fb"); app.style.paddingBottom=fbx?(fbx.offsetHeight+28)+"px":"";
@@ -3120,17 +3178,20 @@ function renderResult(){
        '<p class="muted">Acertou '+r.right+' de '+r.total+'. Os níveis até o seu ponto de partida estão liberados. As questões respondidas entram na revisão do dia, no tempo certo.</p>'+
        '<button class="primary" data-act="home">Voltar às trilhas</button></section>';
   }else if(r.mode==="lesson"){
-    h+='<section class="card resultcard">'+(r.pass?'<div class="check">'+ico("check")+'</div>':'')+'<span class="label">'+TRAILS[r.t].name+' · '+LEVELS[r.l]+'</span>'+
-       '<div class="big">'+r.right+'<small>/'+r.total+'</small></div>'+
-       '<h2>'+(r.pass?"Nível aprovado":"Quase lá")+'</h2>'+
-       '<p class="muted">'+(r.pass?"Você fez "+r.right+" acertos (mínimo "+r.need+"). "+(r.bonus?"Bônus de +"+r.bonus+" XP pela primeira aprovação. ":"")+(r.l<4?"O próximo nível está liberado.":"Você concluiu esta trilha."):"São necessários "+r.need+" acertos para passar. Leia as explicações da revisão e tente de novo.")+'</p>'+
-       '<p class="muted">+'+r.xp+' XP nesta lição.</p>';
+    h+='<section class="card resultcard">'+(r.pass?'<div class="stars" aria-label="'+r.stars+' de 3 estrelas">'+starStr(r.stars)+'</div>':'<div class="broken">'+ico("heart")+'</div>')+'<span class="label">'+TRAILS[r.t].name+' · '+LEVELS[r.l]+'</span>'+
+       '<div class="big">'+r.right+'<small>/'+r.total+' de primeira</small></div>'+
+       '<h2>'+(r.pass?(r.stars===3?"Lição perfeita!":"Nível aprovado"):"Acabaram as vidas")+'</h2>'+
+       '<p class="muted">'+(r.pass?(r.stars===3?"Nenhum erro. ":"Você corrigiu os "+r.missed+(r.missed===1?" erro":" erros")+" no fim da lição. ")+(r.stars<3?"Sem erros, a lição vale 3 estrelas. ":"")+(r.l<4?"O próximo nível está liberado.":"Você concluiu esta trilha."):"O progresso desta lição se perdeu, mas o XP fica. Revise as explicações e tente de novo.")+'</p>'+
+       '<ul class="gains"><li>+'+r.xp+' XP nas questões'+(r.combo>=COMBO_AT?' (melhor sequência: '+r.combo+')':'')+'</li>'+
+       (r.bonus?'<li>+'+r.bonus+' XP pela primeira aprovação</li>':'')+(r.perfect?'<li>+'+r.perfect+' XP de lição perfeita</li>':'')+(r.heart?'<li>+1 vida de presente</li>':'')+'</ul>'+
+       '<p class="fine">'+heartsLine()+'</p>';
     if(r.pass&&r.l<4)h+='<button class="primary" data-act="lesson" data-t="'+r.t+'" data-l="'+(r.l+1)+'">Próximo nível</button>';
-    else h+='<button class="primary" data-act="lesson" data-t="'+r.t+'" data-l="'+r.l+'">Jogar de novo</button>';
+    else if(heartsNow()>0)h+='<button class="primary" data-act="lesson" data-t="'+r.t+'" data-l="'+r.l+'">Jogar de novo</button>';
+    if(!r.pass&&dueIds().length&&heartsNow()<MAX_H)h+='<button class="secondary" data-act="review">Revisar erros e ganhar 1 vida</button>';
     h+='<button class="secondary" data-act="home">Voltar às trilhas</button></section>';
   }else{
     h+='<section class="card"><span class="label">'+(r.train?'Treino concluído · '+esc(TEMAS[r.train.t][r.train.k].n):'Revisão concluída')+'</span><div class="big">'+r.right+'<small>/'+r.total+'</small></div>'+
-       '<p class="muted">+'+r.xp+' XP. '+(r.missed?r.missed+" questão(ões) voltam à revisão.":"Nenhum erro desta vez.")+'</p>'+
+       '<p class="muted">+'+r.xp+' XP. '+(r.missed?r.missed+" questão(ões) voltam à revisão.":"Nenhum erro desta vez.")+(r.heart?" Você ganhou 1 vida.":"")+'</p>'+
        '<button class="primary" data-act="home">Voltar às trilhas</button></section>';
   }
   if(r.missedIds&&r.missedIds.length){var mt=missedTemas(r.missedIds); if(mt.length)h+='<section class="card"><h2>Onde você errou</h2><p class="muted">Estes temas merecem uma revisão antes da próxima tentativa.</p>'+mt.map(function(x){return diagItem(x,'res');}).join('')+'</section>';}
@@ -3161,6 +3222,8 @@ function renderVoz(){
 }
 function render(){
   app.style.paddingBottom="";
+  if(needGate()){renderGate();return;}
+  if(view==="admin"){renderAdmin();return;}
   if(view==="quiz"&&sess)renderQuiz(); else if(view==="result"&&res)renderResult(); else if(view==="rank")renderRank(); else if(view==="voz")renderVoz(); else if(view==="rev")renderRev(); else {view="home";renderHome();}
 }
 
@@ -3176,6 +3239,9 @@ app.addEventListener("click",function(e){
   if(a==="home"){stopVoice();if(sess&&sess.timer)clearTimeout(sess.timer);view="home";sess=null;confirmReset=false;showBackup=false;render();window.scrollTo(0,0);}
   else if(a==="cloud-login")cloudLogin();
   else if(a==="cloud-logout")cloudLogout();
+  else if(a==="admin-open"){view="admin";C.admin=null;render();window.scrollTo(0,0);loadAdmin();}
+  else if(a==="admin-refresh")loadAdmin();
+  else if(a==="reload")location.reload();
   else if(a==="rank-open"){view="rank";render();window.scrollTo(0,0);if(C.profile.nick)loadRank();}
   else if(a==="rank-scope"){C.scope=b.getAttribute("data-s");loadRank();}
   else if(a==="rank-tab"){C.tab=b.getAttribute("data-s");render();}
@@ -3241,21 +3307,36 @@ app.addEventListener("click",function(e){
 /* ---------- Nuvem: login, sincronização e ranking (Firebase) ---------- */
 var FB_CFG={apiKey:"AIzaSyCRziWwFP9s4tSJ8440ZKzF17NGkhIxk6c",authDomain:"arquiteto-de-bolso-83ac0.firebaseapp.com",projectId:"arquiteto-de-bolso-83ac0",storageBucket:"arquiteto-de-bolso-83ac0.firebasestorage.app",messagingSenderId:"326711119792",appId:"1:326711119792:web:9a7df05e96e2598a20d075"};
 var CLOUD_OK=/(^|\.)(github\.io|pages\.dev)$/.test(location.hostname)||location.hostname==="localhost"||location.hostname==="127.0.0.1";
-var C={ready:false,user:null,fauth:null,fdb:null,profile:{nick:"",groups:[],global:false},busy:false,tab:"week",scope:"global",rank:null,rankLoading:false,sync:"",pushT:null,loaded:false};
+/* Login obrigatório no site principal. Nas pré-visualizações (endereços de PR) o login do Google
+   não funciona, então lá o jogo abre sem login. Quem já entrou uma vez joga offline normalmente. */
+var AUTH_KEY="arquiteto-de-bolso.auth", ADMIN_EMAIL="danilo18.ortega@gmail.com", APP_V="v19";
+var AUTH_REQ=CLOUD_OK&&!/\.arquiteto-de-bolso\.pages\.dev$/.test(location.hostname);
+function knownUser(){try{return !!localStorage.getItem(AUTH_KEY);}catch(e){return false;}}
+function needGate(){return AUTH_REQ&&!C.user&&(C.authDone||C.failed||!knownUser());}
+function isAdmin(){return !!(C.user&&C.user.email===ADMIN_EMAIL&&C.user.emailVerified);}
+var C={ready:false,failed:false,authDone:false,admin:null,adminLoading:false,user:null,fauth:null,fdb:null,profile:{nick:"",groups:[],global:false},busy:false,tab:"week",scope:"global",rank:null,rankLoading:false,sync:"",pushT:null,loaded:false};
 function weekKey(d){d=d||new Date();var x=new Date(d.getFullYear(),d.getMonth(),d.getDate());var dow=(x.getDay()+6)%7;x.setDate(x.getDate()-dow);return dkey(x);}
 function weekXpNow(){return (state.wk&&state.wk.k===weekKey())?state.wk.xp:0;}
 function cleanNick(s){return String(s||"").replace(/[<>&"'`\\/]/g,"").replace(/\s+/g," ").trim().slice(0,20);}
 function int0(v){var n=Number(v);return Number.isFinite(n)?Math.trunc(n):0;}
 function pubDoc(){return {nick:C.profile.nick||"Arquiteto",xp:int0(state.xp),wxp:int0(weekXpNow()),wk:weekKey(),streak:int0(streakNow()),t:Date.now()};}
+function seenDoc(ts){
+  var lv=0; TRAIL_ORDER.forEach(function(t){[1,2,3,4].forEach(function(l){var p=state.prog[t][l]; if(p&&p.done)lv++;});});
+  return {name:String(C.user.displayName||"").slice(0,80),email:C.user.email||"",last:ts,xp:Math.min(2000000,int0(state.xp)),wxp:Math.min(20000,int0(weekXpNow())),wk:weekKey(),streak:Math.min(5000,int0(streakNow())),levels:lv,v:APP_V};
+}
 function loadScript(src){return new Promise(function(ok,no){var s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=no;document.head.appendChild(s);});}
 function cloudInit(){
   if(!CLOUD_OK||!navigator.onLine&&false)return;
   var B="https://www.gstatic.com/firebasejs/10.12.2/";
   loadScript(B+"firebase-app-compat.js").then(function(){return loadScript(B+"firebase-auth-compat.js");}).then(function(){return loadScript(B+"firebase-firestore-compat.js");}).then(function(){
     firebase.initializeApp(FB_CFG); C.fauth=firebase.auth(); C.fdb=firebase.firestore(); C.ready=true;
-    C.fauth.onAuthStateChanged(function(u){C.user=u; if(u){afterLogin();} else {C.loaded=false;C.profile={nick:"",groups:[],global:false};C.rank=null; if(view==="home"||view==="rank")render();}});
-    if(view==="home")render();
-  }).catch(function(){C.ready=false;});
+    C.fauth.onAuthStateChanged(function(u){
+      C.user=u; C.authDone=true;
+      try{ if(u)localStorage.setItem(AUTH_KEY,u.uid); else localStorage.removeItem(AUTH_KEY); }catch(e){}
+      if(u){afterLogin();} else {C.loaded=false;C.profile={nick:"",groups:[],global:false};C.rank=null;C.admin=null; if(view!=="quiz"||needGate())render();}
+    });
+    if(view==="home"||needGate())render();
+  }).catch(function(){C.ready=false; C.failed=!knownUser(); if(needGate())render();});
 }
 function mergeStates(a,b){
   var r=normalize(JSON.parse(JSON.stringify(a)));
@@ -3266,6 +3347,7 @@ function mergeStates(a,b){
     [1,2,3,4].forEach(function(l){
       var x=(a.prog[t]||{})[l],y=(b.prog[t]||{})[l]; if(!x&&!y)return;
       r.prog[t][l]={best:Math.max(x?x.best:0,y?y.best:0),done:!!((x&&x.done)||(y&&y.done))};
+      var sx=Math.max(x&&x.stars||0,y&&y.stars||0); if(sx)r.prog[t][l].stars=sx;
     });
   });
   var ids={};Object.keys(a.review||{}).concat(Object.keys(b.review||{})).forEach(function(i){ids[i]=1;});
@@ -3274,6 +3356,7 @@ function mergeStates(a,b){
   r.stats={}; Object.keys(ks).forEach(function(k){var x=a.stats[k]||{r:0,w:0},y=b.stats[k]||{r:0,w:0}; r.stats[k]={r:Math.max(x.r||0,y.r||0),w:Math.max(x.w||0,y.w||0)};});
   var fa=a.flagged||{}, fb=b.flagged||{}, fk={}; Object.keys(fa).concat(Object.keys(fb)).forEach(function(i){fk[i]=1;});
   r.flagged={}; Object.keys(fk).forEach(function(i){var x=fa[i],y=fb[i]; r.flagged[i]=!x?y:(!y?x:((x.at||0)>=(y.at||0)?x:y));});
+  var ha=a.hearts||{u:0},hb=b.hearts||{u:0}; r.hearts=JSON.parse(JSON.stringify((hb.u||0)>(ha.u||0)?hb:ha)); r=normalize(r);
   var wa=a.wk||{k:"",xp:0},wb=b.wk||{k:"",xp:0}; r.wk=wa.k>wb.k?wa:(wb.k>wa.k?wb:{k:wa.k,xp:Math.max(wa.xp||0,wb.xp||0)});
   return r;
 }
@@ -3299,6 +3382,7 @@ function cloudPush(){
   if(!C.user||!C.fdb)return Promise.resolve();
   var u=C.user, db=C.fdb, ts=firebase.firestore.FieldValue.serverTimestamp(), ops=[];
   ops.push(db.collection("users").doc(u.uid).set({state:JSON.stringify(state),profile:{nick:C.profile.nick,groups:C.profile.groups,global:C.profile.global},updated:ts}));
+  ops.push(db.collection("seen").doc(u.uid).set(seenDoc(ts)).catch(function(){}));
   if(C.profile.nick){
     var p=pubDoc();
     C.profile.groups.forEach(function(g){ops.push(db.collection("groups").doc(g.code).collection("members").doc(u.uid).set(p));});
@@ -3314,7 +3398,45 @@ function cloudLogin(){
     else if(e&&e.code!=="auth/popup-closed-by-user"&&e.code!=="auth/cancelled-popup-request")toast("Não consegui entrar. Tente de novo.");
   });
 }
-function cloudLogout(){C.fauth.signOut().then(function(){view="home";toast("Você saiu. Seu progresso continua neste aparelho.");render();});}
+function cloudLogout(){C.fauth.signOut().then(function(){view="home";toast("Você saiu da conta.");render();});}
+function loadAdmin(){
+  if(!isAdmin())return; C.adminLoading=true; render();
+  C.fdb.collection("seen").orderBy("last","desc").limit(500).get().then(function(snap){
+    var l=[]; snap.forEach(function(d){var x=d.data(); x._id=d.id; l.push(x);}); C.admin=l; C.adminErr=false;
+  }).catch(function(){C.admin=[]; C.adminErr=true;}).then(function(){C.adminLoading=false; if(view==="admin")render();});
+}
+function ago(ms){
+  if(!ms)return "—"; var d=new Date(ms), now=new Date(), mins=Math.round((now-d)/60000);
+  if(mins<2)return "agora"; if(mins<60)return "há "+mins+" min";
+  if(dkey(d)===dkey(now))return "hoje "+pad(d.getHours())+":"+pad(d.getMinutes());
+  if(dkey(d)===addDays(dkey(now),-1))return "ontem "+pad(d.getHours())+":"+pad(d.getMinutes());
+  var days=Math.round((now-d)/86400000); return days<30?"há "+days+" dias":pad(d.getDate())+"/"+pad(d.getMonth()+1)+"/"+d.getFullYear();
+}
+function renderAdmin(){
+  var h='<div class="qtop"><button class="ghost" data-act="home">Voltar</button><div class="brand" style="font-size:20px">Quem está usando</div></div>';
+  if(!isAdmin()){app.innerHTML=h+'<section class="card"><p class="muted">Só o administrador vê esta tela.</p></section>';return;}
+  if(C.adminLoading||!C.admin){app.innerHTML=h+'<section class="card"><p class="muted">Carregando…</p></section>';return;}
+  var now=Date.now(), l=C.admin.map(function(x){return {name:x.name||"(sem nome)",email:x.email||"",last:x.last&&x.last.toMillis?x.last.toMillis():0,xp:int0(x.xp),wxp:x.wk===weekKey()?int0(x.wxp):0,streak:int0(x.streak),levels:int0(x.levels),v:x.v||""};});
+  var today=l.filter(function(x){return dkey(new Date(x.last))===dkey();}).length, wk=l.filter(function(x){return now-x.last<7*86400000;}).length;
+  h+='<section class="card"><div class="stats3"><div><b>'+l.length+'</b><span>pessoas</span></div><div><b>'+today+'</b><span>hoje</span></div><div><b>'+wk+'</b><span>em 7 dias</span></div></div>'+
+     (C.adminErr?'<p class="muted">Não consegui carregar a lista agora.</p>':'')+'<button class="secondary" data-act="admin-refresh">Atualizar</button>'+
+     '<p class="fine">Aparece aqui quem entrou com o Google a partir desta versão. O "último acesso" é a última vez que o progresso foi salvo na nuvem.</p></section>';
+  h+='<section class="card"><ol class="ulist">'+l.map(function(x){
+    return '<li><div class="un"><b>'+esc(x.name)+'</b><span class="fine">'+esc(x.email)+'</span></div>'+
+      '<div class="um"><span>'+esc(ago(x.last))+'</span><span>'+x.xp+' XP · '+x.wxp+' na semana</span><span>'+x.levels+' níveis · '+x.streak+' dias seguidos</span></div></li>';
+  }).join('')+'</ol></section>';
+  app.innerHTML=h;
+}
+function renderGate(){
+  var off=!navigator.onLine;
+  app.innerHTML='<section class="card gate"><div class="brand">Arquiteto de <span>Bolso</span></div>'+
+    '<p class="muted">Estude arquitetura de TI em lições curtas, com revisão dos erros, vidas, estrelas e ranking.</p>'+
+    (C.failed&&!off?'<button class="primary" data-act="reload">Tentar de novo</button><p class="fine">Não consegui falar com o Google agora.</p>':
+     '<button class="primary" data-act="cloud-login"'+(C.ready?'':' disabled')+'>'+(C.ready?'Entrar com Google':(off?'Sem internet':'Carregando…'))+'</button>')+
+    (off?'<p class="fine">Conecte-se à internet para entrar pela primeira vez. Depois disso, o app funciona offline e sincroniza quando a internet voltar.</p>':
+         '<p class="fine">Depois de entrar, o app funciona offline e sincroniza quando a internet voltar. Guardamos nome, e-mail e progresso (Firebase, do Google); o e-mail nunca aparece no ranking. O progresso que já está neste aparelho vai junto para a sua conta.</p>')+
+    '</section>';
+}
 function rankRows(list,tab){
   var wk=weekKey();
   return list.map(function(m){return {nick:cleanNick(m.nick)||"Arquiteto",xp:tab==="week"?(m.wk===wk?int0(m.wxp):0):int0(m.xp),streak:int0(m.streak),me:!!(C.user&&m._id===C.user.uid)};})
@@ -3367,7 +3489,7 @@ function setGlobal(on){
 function wipeCloud(){
   var u=C.user, db=C.fdb, ops=[];
   C.profile.groups.forEach(function(g){ops.push(db.collection("groups").doc(g.code).collection("members").doc(u.uid).delete());});
-  ops.push(db.collection("global").doc(u.uid).delete()); ops.push(db.collection("users").doc(u.uid).delete());
+  ops.push(db.collection("global").doc(u.uid).delete()); ops.push(db.collection("users").doc(u.uid).delete()); ops.push(db.collection("seen").doc(u.uid).delete());
   Promise.all(ops).then(function(){return u.delete();}).then(function(){toast("Seus dados na nuvem e a conta foram apagados.");}).catch(function(){toast("Dados apagados. Para excluir a conta, saia e entre de novo e repita.");C.fauth.signOut();}).then(function(){view="home";render();});
 }
 function cloudCard(){
@@ -3375,7 +3497,8 @@ function cloudCard(){
   if(!C.user){
     return '<section class="card cloud"><h2>Guarde seu progresso e entre no ranking</h2><p class="muted">Entre com sua conta Google para salvar o progresso na nuvem, usar em mais de um aparelho e competir com um grupo de amigos.</p><button class="primary" data-act="cloud-login">Entrar com Google</button><p class="fine">Guardamos apenas apelido, XP e progresso (Firebase, do Google). Seu e-mail nunca aparece no ranking e você pode apagar tudo quando quiser. Sem login, tudo continua funcionando neste aparelho.</p></section>';
   }
-  return '<section class="card cloud"><div class="row2"><div><span class="label">Conectado</span><h2>'+esc(C.profile.nick||"Escolha seu apelido")+'</h2></div><div class="row"><button class="primary" data-act="rank-open">Ranking</button></div></div><p class="fine" id="syncs">'+esc(C.sync||"")+'</p></section>';
+  return '<section class="card cloud"><div class="row2"><div><span class="label">Conectado</span><h2>'+esc(C.profile.nick||"Escolha seu apelido")+'</h2></div><div class="row"><button class="primary" data-act="rank-open">Ranking</button></div></div><p class="fine" id="syncs">'+esc(C.sync||"")+'</p>'+
+    (isAdmin()?'<button class="secondary" data-act="admin-open">Quem está usando</button>':'')+'</section>';
 }
 function renderRank(){
   var h='<div class="qtop"><button class="ghost" data-act="home">Voltar</button><span class="count" style="margin-left:auto">Ranking</span></div>';
@@ -3407,6 +3530,8 @@ function renderRank(){
 /* expõe para teste local */
 window.__game={QS:QS,state:function(){return state;},C:C,merge:mergeStates,go:function(v){view=v;render();}};
 cloudInit();
+window.addEventListener("online",function(){ if(needGate()){ if(!C.ready)location.reload(); else render(); } });
+window.addEventListener("offline",function(){ if(needGate())render(); });
 render();
 if(fixedOnLoad)setTimeout(function(){toast(fixedOnLoad===1?"1 questão corrigida voltou para a trilha.":fixedOnLoad+" questões corrigidas voltaram para as trilhas.");},600);
 })();
