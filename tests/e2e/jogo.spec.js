@@ -9,6 +9,8 @@ const PRIMEIRA = TRAIL_ORDER[0];
 // para o teste ser rápido, repetível e não quebrar por causa da internet.
 test.beforeEach(async ({ page }) => {
   await page.route(/^https:\/\/(fonts\.(googleapis|gstatic)\.com|www\.gstatic\.com|.*\.googleapis\.com)\//, (r) => r.abort());
+  // Simula quem já entrou com o Google neste aparelho (o login é obrigatório no site).
+  await page.addInitScript(() => { if (!sessionStorage.getItem("sem-login")) localStorage.setItem("arquiteto-de-bolso.auth", "teste"); });
   page.erros = [];
   page.on("pageerror", (e) => page.erros.push(e.message));
   // Guarda tudo que a CSP bloquear. Se um script nosso mudar sem o hash acompanhar, aparece aqui.
@@ -92,13 +94,58 @@ test("acertando tudo, passa no nível 1 e o progresso fica salvo", async ({ page
   await expect(page.locator(`[data-act="lesson"][data-t="${PRIMEIRA}"][data-l="2"]`)).toHaveAttribute("data-state", "open");
 });
 
-test("errando tudo, não passa e o nível 2 continua bloqueado", async ({ page }) => {
+test("errando tudo, as vidas acabam e o nível 2 continua bloqueado", async ({ page }) => {
   await page.goto("/");
-  await jogarLicao(page, false);
-  await expect(page.locator("#app")).toContainText("Jogar de novo");
-  await page.locator('[data-act="home"]').first().click();
   await abrirTrilha(page);
+  await page.locator(`[data-act="lesson"][data-t="${PRIMEIRA}"][data-l="1"]`).click();
+  for (let i = 1; i <= 5; i++) {
+    await expect(page.locator(".hearts")).toContainText(String(6 - i));
+    await responder(page, false);
+    await page.locator('[data-act="next"]').click();
+  }
+  await expect(page.locator("#app")).toContainText("Acabaram as vidas");
+  await page.screenshot({ path: "tests/e2e/telas/sem-vidas.png", fullPage: true });
+  // Sem vidas, não dá para começar outra lição.
+  await page.locator('[data-act="home"]').first().click();
+  await expect(page.locator('.chip.heart')).toContainText("0");
+  await abrirTrilha(page);
+  await page.locator(`[data-act="lesson"][data-t="${PRIMEIRA}"][data-l="1"]`).click();
+  await expect(page.locator("#toast")).toContainText("Sem vidas");
+  await expect(page.locator(".qtext")).toHaveCount(0);
   await expect(page.locator(`[data-act="lesson"][data-t="${PRIMEIRA}"][data-l="2"]`)).toHaveAttribute("data-state", "locked");
+});
+
+test("errando 2, refaz só as 2 no fim e passa de nível", async ({ page }) => {
+  await page.goto("/");
+  await abrirTrilha(page);
+  await page.locator(`[data-act="lesson"][data-t="${PRIMEIRA}"][data-l="1"]`).click();
+  for (let i = 1; i <= 8; i++) {
+    await responder(page, i > 2); // erra as 2 primeiras
+    if (i <= 2) await expect(page.locator(".fb")).toContainText("volta no fim da lição");
+    await page.locator('[data-act="next"]').click();
+  }
+  // Depois das 8, só as 2 erradas voltam.
+  await expect(page.locator(".count")).toContainText("9/10");
+  await expect(page.locator(".xtag.again")).toBeVisible();
+  for (let i = 0; i < 2; i++) {
+    await responder(page, true);
+    await page.locator('[data-act="next"]').click();
+  }
+  await expect(page.locator("#app")).toContainText("Nível aprovado");
+  await expect(page.locator(".stars")).toHaveText("★★☆");
+  await page.screenshot({ path: "tests/e2e/telas/aprovado-com-erros.png", fullPage: true });
+  await page.locator('[data-act="home"]').first().click();
+  await expect(page.locator('.chip.heart')).toContainText("3");
+  await abrirTrilha(page);
+  await expect(page.locator(`[data-act="lesson"][data-t="${PRIMEIRA}"][data-l="2"]`)).toHaveAttribute("data-state", "open");
+});
+
+test("lição perfeita dá 3 estrelas e bônus", async ({ page }) => {
+  await page.goto("/");
+  await jogarLicao(page, true);
+  await expect(page.locator(".stars")).toHaveText("★★★");
+  await expect(page.locator("#app")).toContainText("Lição perfeita!");
+  await expect(page.locator(".gains")).toContainText("XP de lição perfeita");
 });
 
 test("no celular, a tela não rola para os lados", async ({ page }) => {
@@ -176,4 +223,13 @@ test("a CSP bloqueia um script injetado na página", async ({ page }) => {
   expect(rodou, "o script injetado não pode rodar").toBe(false);
   await expect.poll(() => page.evaluate(() => window.__csp.length)).toBeGreaterThan(0);
   await page.evaluate(() => { window.__csp = []; }); // bloqueio esperado, não conta como falha
+});
+
+test("sem login, o site pede para entrar com o Google", async ({ page }) => {
+  await page.addInitScript(() => { sessionStorage.setItem("sem-login", "1"); localStorage.removeItem("arquiteto-de-bolso.auth"); });
+  await page.goto("/");
+  await expect(page.locator(".gate")).toBeVisible();
+  await expect(page.locator(".gate")).toContainText("funciona offline");
+  await expect(page.locator('[data-act="toggle"]')).toHaveCount(0);
+  await page.screenshot({ path: "tests/e2e/telas/login.png", fullPage: true });
 });
