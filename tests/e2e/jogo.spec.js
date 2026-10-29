@@ -83,7 +83,8 @@ async function jogarLicao(page, certo) {
 // Abre todos os grupos de trilhas da tela inicial.
 async function abrirGrupos(page) {
   const fechados = page.locator('.ghead[aria-expanded="false"]');
-  while ((await fechados.count()) > 0) await fechados.first().click();
+  // dispatchEvent não espera o botão ficar parado: offline a tela se redesenha e o clique normal se perdia.
+  while ((await fechados.count()) > 0) await fechados.first().dispatchEvent("click");
 }
 
 test("a página inicial abre com todas as trilhas", async ({ page }) => {
