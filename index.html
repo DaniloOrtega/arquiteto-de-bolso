@@ -166,6 +166,13 @@ p{margin:0}
 .lvl-side .st{color:#E8A317;font-size:15px;letter-spacing:1px}
 .gains{list-style:none;padding:0;margin:8px 0;font-family:var(--f-mono);font-size:14px}
 .gains li{padding:2px 0}
+.sechead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:18px 4px 8px;flex-wrap:wrap}
+.sechead h2{margin:0}
+.others{margin:4px 0 14px}
+.prow.plan b{color:var(--bad)}
+.pmore{margin:10px 0;text-align:left}
+.pmore summary{cursor:pointer;font-weight:700;color:var(--ink-2)}
+.planbtn{display:block;margin:0 0 6px}
 .gate{margin-top:12vh;text-align:center}
 .gate .brand{font-size:30px;margin-bottom:10px}
 .stats3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;margin-bottom:12px}
@@ -2084,7 +2091,6 @@ var RAW=[
 var TEMAS={"rede": {"end": {"n": "Endereçamento, sub-redes e NAT", "d": "Revise máscaras e CIDR (quantos endereços cabem em /24, /26, /22), faixas privadas, NAT, DHCP e noções de IPv6."}, "dns": {"n": "DNS e resolução de nomes", "d": "Revise os tipos de registro (A, CNAME, MX), TTL, resolução recursiva e o que acontece quando um nome não resolve."}, "rot": {"n": "Roteamento, BGP e gateways", "d": "Revise rota mais específica, ECMP, rotas estáticas x dinâmicas, BGP básico e redundância de gateway (VRRP/HSRP)."}, "vlan": {"n": "Switching, VLAN e firewall", "d": "Revise VLAN e trunk (802.1Q), segmentação, firewall com e sem estado e o papel de cada um no desenho de uma rede."}, "diag": {"n": "VPN, MTU e diagnóstico", "d": "Revise IPsec, MTU/MSS, TCP, balanceamento de camada 4 e 7 e como interpretar traceroute e ping."}}, "arq": {"vir": {"n": "Virtualização e hosts", "d": "Revise hipervisor, vMotion/migração ao vivo, relação vCPU por núcleo, hiperconvergência e licenciamento por núcleo."}, "sto": {"n": "Armazenamento e RAID", "d": "Revise RAID 0/1/5/6/10, SAN x NAS x objetos, thin provisioning e como o armazenamento limita o desempenho de bancos."}, "bkp": {"n": "Backup e cópias de dados", "d": "Revise a regra 3-2-1, diferença entre snapshot e backup, retenção, arquivamento e replicação síncrona x assíncrona."}, "dim": {"n": "Dimensionamento e capacidade", "d": "Revise capacidade de pico x média, reserva N+1, monitoramento e planejamento de migração de datacenter."}, "red": {"n": "Camadas e redundância", "d": "Revise arquitetura em três camadas, ponto único de falha, quórum de cluster, manutenção sem parada e gestão de mudanças."}}, "nuv": {"mod": {"n": "IaaS, PaaS, SaaS e responsabilidade", "d": "Revise o modelo de responsabilidade compartilhada: o que o provedor cuida e o que continua com você em cada modelo."}, "esc": {"n": "Escala e elasticidade", "d": "Revise escalabilidade x elasticidade, auto scaling, serverless e quando cada abordagem de escala faz sentido."}, "dis": {"n": "Regiões, zonas e recuperação", "d": "Revise zona x região, SLA composto, estratégias de DR (backup, pilot light, warm standby, ativo-ativo) e seus custos."}, "cus": {"n": "Custo na nuvem", "d": "Revise pay-as-you-go, os pilares do Well-Architected (custo, confiabilidade, segurança) e o custo de transferência de dados."}, "mig": {"n": "Migração, governança e lock-in", "d": "Revise as estratégias de migração (rehost, replatform, refactor), landing zone, contas separadas, políticas e dependência de provedor."}}, "rnu": {"sub": {"n": "VPC, sub-redes e gateways", "d": "Revise sub-rede pública x privada, gateway de internet, NAT gateway e como a tabela de rotas define o que é público."}, "sec": {"n": "Grupos de segurança e controle de tráfego", "d": "Revise security group (com estado) x network ACL (sem estado) e como combinar camadas de acesso."}, "con": {"n": "Peering, hub e conectividade híbrida", "d": "Revise peering (não transitivo), transit gateway, hub-and-spoke, VPN/BGP, endpoints privados e custos de tráfego."}, "dns": {"n": "DNS híbrido e endereçamento", "d": "Revise IPAM, sobreposição de blocos, DNS híbrido com encaminhadores, IPv6 e o conceito de DDI."}}, "seg": {"iam": {"n": "Identidade e acesso", "d": "Revise menor privilégio, MFA resistente a phishing, SSO, acesso temporário e zero trust."}, "cri": {"n": "Criptografia e dados", "d": "Revise criptografia em repouso x em trânsito, KMS, envelope encryption e retenção imutável (object lock)."}, "red": {"n": "Proteção de rede e aplicação", "d": "Revise firewall x WAF, DDoS, SSRF e regras de rede abertas ao mundo (0.0.0.0/0)."}, "inc": {"n": "Detecção e resposta a incidentes", "d": "Revise registro de auditoria, triagem de alertas, contenção e preservação de evidências e backups contra ransomware."}, "gov": {"n": "Governança, risco e conformidade", "d": "Revise ameaça x vulnerabilidade x risco, classificação de dados, LGPD, modelagem de ameaças e segurança da cadeia de suprimentos."}}, "ha": {"met": {"n": "RTO, RPO e SLA", "d": "Revise RTO x RPO, a tabela de noves de disponibilidade e como definir metas por criticidade."}, "red": {"n": "Zonas, réplicas e balanceamento", "d": "Revise Multi-AZ, health checks, camada sem estado e eliminação de pontos únicos de falha."}, "dr": {"n": "Estratégias de DR e backup", "d": "Revise backup/restauração, pilot light, warm standby, ativo-ativo, teste de restauração e dependências do plano."}, "res": {"n": "Resiliência e degradação", "d": "Revise circuit breaker, retry com backoff, degradação graciosa, filas com DLQ e engenharia do caos."}, "con": {"n": "Replicação e consistência multirregião", "d": "Revise replicação síncrona x assíncrona, conflitos no ativo-ativo, quórum e perda de dados em falhas regionais."}}, "db": {"mod": {"n": "Modelos de dados e escolha do banco", "d": "Revise relacional x NoSQL, normalização, chave estrangeira, OLTP x OLAP e quando usar cada tipo de banco."}, "per": {"n": "Índices e desempenho", "d": "Revise índices (clusterizado x não), particionamento, pool de conexões e chaves quentes em bancos chave-valor."}, "rep": {"n": "Réplicas, cache e escala de leitura", "d": "Revise réplicas de leitura, atraso de replicação, cache e quando escalar leitura x escrita."}, "bkp": {"n": "Backup, migração e recuperação", "d": "Revise backup lógico x físico, PITR, migração com CDC e conversão de procedimentos entre bancos."}, "tra": {"n": "Transações e consistência", "d": "Revise ACID, níveis de isolamento, locks e deadlocks, consistência eventual e o padrão outbox."}}, "cont": {"doc": {"n": "Docker e imagens", "d": "Revise imagem x contêiner, camadas e cache do Dockerfile, tags de imagem (latest) e diferença entre VM e contêiner."}, "k8s": {"n": "Kubernetes: pods e recursos", "d": "Revise requests x limits, probes (readiness/liveness), Service, HPA, StatefulSet e distribuição de pods entre nós."}, "srv": {"n": "Serverless e eventos", "d": "Revise cold start, limites de execução, filas, escala até zero e quando serverless não compensa."}, "ope": {"n": "Operação, segurança e custo no cluster", "d": "Revise namespaces, RBAC, network policy, assinatura de imagens, GitOps e instâncias spot."}}, "ops": {"cic": {"n": "CI/CD e estratégias de entrega", "d": "Revise entrega x implantação contínua, blue/green x canário, feature flags, branches curtas e métricas DORA."}, "iac": {"n": "Infraestrutura como código", "d": "Revise idempotência, drift, módulos versionados, automação de runbooks e plataforma interna."}, "obs": {"n": "Observabilidade e alertas", "d": "Revise métricas x logs x traces, alertas orientados a sintomas e alta cardinalidade."}, "sre": {"n": "SLO, orçamento de erro e confiabilidade", "d": "Revise SLI/SLO/SLA, error budget, alertas por burn rate e planejamento de capacidade."}, "inc": {"n": "Incidentes e melhoria contínua", "d": "Revise postmortem sem culpados, runbooks, comando de incidente e como evitar que o mesmo incidente se repita."}}, "fin": {"mod": {"n": "Modelos de compra e descontos", "d": "Revise sob demanda x reservada x savings plan x spot, riscos de compromisso e contratos de volume."}, "vis": {"n": "Visibilidade, etiquetas e rateio", "d": "Revise tags padronizadas, showback x chargeback, alocação em Kubernetes, custo por unidade e rateio de custos compartilhados."}, "otm": {"n": "Otimização e desperdício", "d": "Revise rightsizing, desligamento fora do horário, ciclo de vida de armazenamento, CDN e transferência de dados."}, "gov": {"n": "Governança, orçamento e previsão", "d": "Revise budget x forecast, alertas de anomalia, ciclo Inform-Optimize-Operate e previsão ligada ao negócio."}}, "sw": {"est": {"n": "Monólito, microsserviços e estilos", "d": "Revise monólito modular x microsserviços, acoplamento, divisão por capacidade de negócio e monólito distribuído."}, "ddd": {"n": "Domínio e DDD", "d": "Revise entidade x objeto de valor, agregado, repositório, contextos delimitados e camada anticorrupção."}, "int": {"n": "APIs e integração", "d": "Revise REST stateless, versionamento de API, idempotência, comunicação síncrona x assíncrona e contratos de eventos."}, "res": {"n": "Resiliência e consistência distribuída", "d": "Revise saga, CQRS, event sourcing, circuit breaker e consistência eventual."}, "dec": {"n": "Requisitos e decisões de arquitetura", "d": "Revise requisitos não funcionais, latência p99, ADR e como registrar decisões e trade-offs."}}, "ing": {"ope": {"n": "Operações e incidentes (inglês)", "d": "Revise vocabulário de operação: outage, troubleshooting, rollback, workaround, root cause, deploy e support ticket."}, "prj": {"n": "Projeto e gestão (inglês)", "d": "Revise termos de gestão: scope creep, lead time, PoC, pricing, out of scope e blocked."}, "com": {"n": "Comunicação com o cliente (inglês)", "d": "Pratique frases profissionais: walk through, align on next steps, take offline, comunicar riscos e prazos."}, "arq": {"n": "Termos de arquitetura (inglês)", "d": "Revise failover, storage, network, on-premises, rate limits, SLA, preview e trade-off."}}, "disc": {"req": {"n": "Levantamento de requisitos", "d": "Revise a diferença entre requisito funcional e não funcional, restrição x premissa, e as perguntas que transformam um pedido vago em número (RTO, RPO, usuários, picos)."}, "siz": {"n": "Dimensionamento (sizing)", "d": "Revise pico x média, baseline de uso, crescimento composto, IOPS e rightsizing. Refaça as contas com calma, convertendo as unidades."}, "tco": {"n": "Custos e TCO", "d": "Revise o que compõe o TCO (rede, dados, licenças, pessoas, migração), sob demanda x reservado e payback simples."}, "prop": {"n": "Proposta e escopo", "d": "Revise premissas, itens fora do escopo, opções comparáveis, faixas de estimativa e como explicar o preço ao cliente."}, "risk": {"n": "Riscos e expectativas", "d": "Revise como traduzir pedidos como 'nunca pode parar' em metas mensuráveis, SLA composto e critérios de sucesso de um PoC."}}, "idd": {"api": {"n": "APIs e contratos", "d": "Revise REST e métodos HTTP, versionamento, API Gateway, rate limit, timeout e cache de respostas."}, "msg": {"n": "Mensageria e eventos", "d": "Revise fila x tópico, DLQ, idempotência, consistência eventual, outbox e schema registry."}, "etl": {"n": "ETL, ELT e pipelines", "d": "Revise ETL x ELT, CDC, partições e o que limita a velocidade de uma carga de dados."}, "dw": {"n": "Data warehouse e data lake", "d": "Revise OLTP x OLAP, warehouse x lake, esquema estrela e cuidados de governança de dados."}, "int": {"n": "Padrões de integração", "d": "Revise ponto a ponto x barramento, iPaaS, webhook x polling e o impacto de dependências síncronas na disponibilidade."}}, "gov": {"ea": {"n": "Arquitetura corporativa", "d": "Revise o objetivo da arquitetura corporativa, o TOGAF (ADM), arquitetura atual x alvo e como mostrar valor ao negócio."}, "gv": {"n": "Governança e políticas", "d": "Revise governança x gestão, comitê de arquitetura, políticas, guardrails, shadow IT e tratamento de exceções."}, "cmp": {"n": "Compliance e proteção de dados", "d": "Revise LGPD (controlador x operador, incidente), ISO 27001, residência de dados e acesso privilegiado."}, "adr": {"n": "Decisões e dívida técnica", "d": "Revise o que é um ADR, princípios de arquitetura, dívida técnica e quando uma decisão deve ser revisada."}, "cat": {"n": "Portfólio e capacidades", "d": "Revise inventário de aplicações, mapa de capacidades e as opções de racionalização (manter, aposentar, substituir...)."}}, "ia": {"ml": {"n": "Conceitos de machine learning", "d": "Revise supervisionado x não supervisionado, overfitting, viés, acurácia x precisão x revocação e o efeito do limiar."}, "gen": {"n": "IA generativa e LLM", "d": "Revise o que é um LLM, prompt, alucinação, RAG, embeddings e banco vetorial."}, "mlo": {"n": "Ciclo de vida e MLOps", "d": "Revise treinamento x inferência, conjunto de teste, versionamento, drift e monitoramento em produção."}, "inf": {"n": "Infraestrutura e custo de IA", "d": "Revise por que GPUs, memória para os pesos do modelo, custo por token e quando hospedar o próprio modelo."}, "eti": {"n": "Riscos, privacidade e ética", "d": "Revise dados pessoais em IA, viés, confidencialidade, prompt injection e o papel da revisão humana."}}, "esp": {"inf": {"n": "Vocabulário de infraestrutura", "d": "Revise servidor, base de datos, copia de seguridad, ancho de banda, balanceador de carga e falsos amigos."}, "nub": {"n": "Vocabulário de nuvem", "d": "Revise nube, alta disponibilidad, pago por uso, cuota e conmutación por error."}, "seg": {"n": "Vocabulário de segurança", "d": "Revise contraseña, cortafuegos, vulnerabilidad, cifrado en reposo y en tránsito e brecha de seguridad."}, "rep": {"n": "Reuniões e propostas", "d": "Revise plazo, alcance, estimación, incumplimiento, 'no se contempla' e frases de contrato."}, "inc": {"n": "Incidentes e recuperação", "d": "Revise caída del servicio, escalar el incidente, causa raíz, recuperación ante desastres e plan de contención."}}};
 
 var TRAIL_ORDER=["rede","arq","nuv","rnu","seg","ha","db","idd","cont","ops","fin","sw","disc","gov","ia","ing","esp"];
-var GEN_ORDER=["rede","arq","nuv","rnu","seg","ha","db","cont","ops","fin","sw","ing"];
 var TRAILS={
   rede:{name:"Redes do zero",tag:"IP · DNS · VLAN",desc:"Endereços, nomes, roteamento, VPN e firewall."},
   arq:{name:"Arquitetura tradicional",tag:"VM · SAN · 3 CAMADAS",desc:"Servidores, virtualização, armazenamento, arquitetura em camadas e migração."},
@@ -2108,7 +2114,7 @@ var LEVELS={1:"Básico",2:"Intermediário",3:"Avançado",4:"Especialista"};
 var PASS_BY={1:0.75,2:0.875,3:0.875,4:0.875}, LVL_NOTE={1:"8 questões · a última vale o dobro",2:"8 questões · 3 estrelas sem erros",3:"8 questões · 3 estrelas sem erros",4:"8 questões · nível de certificação"};
 /* Vidas: cada erro numa lição custa 1. Volta 1 a cada 30 minutos, ou com revisão e lição perfeita. */
 var MAX_H=5, H_MS=30*60*1000, COMBO_AT=3, COMBO_XP=2, PERFECT_XP=15, RETRY_XP=5;
-var AUTO_MS=4000, GOAL=30, PLACE_Q=5, PLACE_ALL_Q=2, INT={1:1,2:3,3:7,4:14,5:30};
+var PLAN_MAX=4, AUTO_MS=4000, GOAL=30, PLACE_Q=5, PLACE_ALL_Q=2, INT={1:1,2:3,3:7,4:14,5:30};
 
 var counters={};
 var QS=RAW.map(function(r){
@@ -2620,7 +2626,7 @@ function speakTerm(x,t){ if(FL[t])say([{x:x,l:FL[t]}]); }
 
 /* ---------- Estado e armazenamento ---------- */
 var KEY="arquiteto-de-bolso.v2", OLD_KEY="arquiteto-de-bolso.v1";
-function defaults(){var p={};TRAIL_ORDER.forEach(function(t){p[t]={};});return {xp:0,streak:0,last:null,day:null,dayXp:0,placed:{},prog:p,review:{},stats:{},wk:{k:"",xp:0},flagged:{},hearts:{n:MAX_H,at:Date.now(),u:0}};}
+function defaults(){var p={};TRAIL_ORDER.forEach(function(t){p[t]={};});return {xp:0,streak:0,last:null,day:null,dayXp:0,placed:{},prog:p,review:{},stats:{},wk:{k:"",xp:0},flagged:{},hearts:{n:MAX_H,at:Date.now(),u:0},plan:null};}
 function normalize(o){
   var d=defaults();
   if(o&&typeof o==="object"){
@@ -2629,6 +2635,8 @@ function normalize(o){
     var np={}; if(d.placed&&typeof d.placed==="object"){ TRAIL_ORDER.forEach(function(t){ if(d.placed[t]>=1&&d.placed[t]<=4) np[t]=d.placed[t]; }); } d.placed=np;
     if(!d.review||typeof d.review!=="object") d.review={}; if(!d.stats||typeof d.stats!=="object") d.stats={};
     if(!d.flagged||typeof d.flagged!=="object") d.flagged={};
+    if(d.plan&&(typeof d.plan!=="object"||!Array.isArray(d.plan.t))) d.plan=null;
+    if(d.plan) d.plan={t:d.plan.t.filter(function(t){return TRAILS[t];}).slice(0,8),at:Number(d.plan.at)||0};
     var hh=d.hearts; if(!hh||typeof hh!=="object"||!(hh.n>=0&&hh.n<=MAX_H)||typeof hh.at!=="number") d.hearts={n:MAX_H,at:Date.now(),u:0}; else d.hearts={n:Math.floor(hh.n),at:hh.at,u:Number(hh.u)||0};
   }
   return d;
@@ -2711,6 +2719,13 @@ function unlocked(t,l){
 
 /* ---------- Sessões ---------- */
 var bkText="", openTrails={};
+var showOthers=false;
+function inPlan(t){return !!(state.plan&&state.plan.t.indexOf(t)>=0);}
+function togglePlan(t){
+  var l=state.plan?state.plan.t.slice():[], i=l.indexOf(t);
+  if(i>=0)l.splice(i,1); else l.push(t);
+  state.plan={t:l.slice(0,8),at:Date.now()}; save();
+}
 var view="home", sess=null, res=null, confirmReset=false, showBackup=false;
 
 function newSess(mode,extra){
@@ -2743,8 +2758,8 @@ function startPlacement(t){
 }
 function startPlacementAll(){
   var seq=[],ptr={};
-  GEN_ORDER.forEach(function(t){ptr[t]=2; for(var i=0;i<PLACE_ALL_Q;i++)seq.push(t);});
-  sess=newSess("placement",{all:true,seq:seq,ptr:ptr,used:{},total:seq.length});
+  TRAIL_ORDER.forEach(function(t){ptr[t]=2; for(var i=0;i<PLACE_ALL_Q;i++)seq.push(t);});
+  sess=newSess("placement",{all:true,seq:seq,ptr:ptr,used:{},total:seq.length,hits:{}});
   view="quiz"; loadQ();
 }
 function pickPlacement(t){
@@ -2804,6 +2819,7 @@ function grade(ok){
     state.review[q.id]={box:nb,due:addDays(today,INT[nb])};
   }
   if(s.mode==="placement"){
+    if(s.all)s.hits[q.t]=(s.hits[q.t]||0)+(ok?1:0);
     s.ptr[q.t]=ok?Math.min(4,s.ptr[q.t]+1):Math.max(1,s.ptr[q.t]-1);
     if(s.all&&s.seq[s.i+1]!==q.t){if(!state.placed)state.placed={}; state.placed[q.t]=Math.min(3,s.ptr[q.t]);}
   }
@@ -2888,9 +2904,10 @@ function renderRev(){
   });
   app.innerHTML=h;
 }
+function qlen(s){return s.qs?s.qs.length:s.total;}
 function next(){
   var s=sess; if(s.timer){clearTimeout(s.timer);s.timer=null;} s.i++;
-  if(s.dead||s.i>=s.qs.length)finish(); else loadQ();
+  if(s.dead||s.i>=qlen(s))finish(); else loadQ();
 }
 function finish(){
   var s=sess, r={mode:s.mode,right:s.right,total:s.total,xp:s.xpGain,missed:s.missed.length,missedIds:s.missed.slice(),train:s.train||null,bonus:0};
@@ -2905,7 +2922,12 @@ function finish(){
   if(s.mode==="review"&&s.right>=3)r.heart=gainHeart();
   if(s.mode==="placement"){
     if(!state.placed)state.placed={};
-    if(s.all){r.all=true; r.levels=GEN_ORDER.map(function(t){var lv=Math.min(3,s.ptr[t]); state.placed[t]=lv; return [t,lv];});}
+    if(s.all){
+      r.all=true; r.levels=TRAIL_ORDER.map(function(t){var lv=Math.min(3,s.ptr[t]); state.placed[t]=lv; return [t,lv,s.hits[t]||0];});
+      // Plano: as trilhas em que a pessoa foi pior (até 4). Empate: a que vem antes na ordem (mais fundamental).
+      var weak=r.levels.filter(function(x){return x[2]<PLACE_ALL_Q;}).sort(function(a,b){return a[2]-b[2]||TRAIL_ORDER.indexOf(a[0])-TRAIL_ORDER.indexOf(b[0]);});
+      state.plan={t:weak.slice(0,PLAN_MAX).map(function(x){return x[0];}),at:Date.now()}; r.plan=state.plan.t.slice(); showOthers=false; openTrails={};
+    }
     else{state.placed[s.t]=s.ptr[s.t]; r.t=s.t; r.level=s.ptr[s.t];}
   }
   save(); res=r; view="result"; stopVoice(); sfx((r.mode==="lesson"&&!r.pass)?"lose":"win"); render(); window.scrollTo(0,0);
@@ -3015,7 +3037,7 @@ function renderHome(){
   var nRev=flaggedList().length;
   if(nRev)h+='<section class="card revcard"><div class="row2"><span><b>'+nRev+(nRev===1?' questão em revisão':' questões em revisão')+'</b><br><span class="fine">Fora das trilhas até serem corrigidas.</span></span><button class="secondary" data-act="rev-open" style="width:auto">Ver</button></div></section>';
   if(state.xp===0&&!Object.keys(state.placed).length){
-    h+='<section class="card intro tc" style="--h:25"><span class="tbadge">'+ico("star")+'</span><div style="display:flex;flex-direction:column;gap:10px;flex:1;min-width:0"><h2>Por onde começar</h2><p class="muted">Faça o nivelamento geral ('+(PLACE_ALL_Q*GEN_ORDER.length)+' perguntas) para liberar o seu nível nas 12 trilhas básicas. As trilhas novas (proposta, integração, governança, IA e espanhol) têm teste próprio dentro de cada uma.</p><button class="primary" data-act="placement-all">Fazer o nivelamento geral</button></div></section>';
+    h+='<section class="card intro tc" style="--h:25"><span class="tbadge">'+ico("star")+'</span><div style="display:flex;flex-direction:column;gap:10px;flex:1;min-width:0"><h2>Por onde começar</h2><p class="muted">Faça o nivelamento geral ('+(PLACE_ALL_Q*TRAIL_ORDER.length)+' perguntas, '+PLACE_ALL_Q+' de cada trilha). No fim, o app monta um plano só com as trilhas em que você precisa melhorar.</p><button class="primary" data-act="placement-all">Fazer o nivelamento geral</button></div></section>';
   }
 
   var parts=[]; if(dc.err)parts.push(dc.err+(dc.err===1?" erro":" erros")); if(dc.fresh)parts.push(dc.fresh+(dc.fresh===1?" questão para refrescar a memória":" questões para refrescar a memória"));
@@ -3027,9 +3049,14 @@ function renderHome(){
   if(wk!==null){
     h+='<section class="card"><h2>Seu diagnóstico</h2>'+(wk.length?'<p class="muted">Pelos seus acertos até agora, estes são os temas em que você mais erra. Estude o resumo e treine em seguida.</p>'+wk.map(function(x){return diagItem(x,'home');}).join(''):'<p class="muted">Sem pontos fracos claros por enquanto: seus temas estão acima de 70% de acertos. O diagnóstico fica mais preciso quanto mais você responde.</p>')+'</section>';
   }
-  var firstOpen=null;
-  TRAIL_ORDER.forEach(function(t){ if(firstOpen===null){ var n=[1,2,3,4].filter(function(l){var p=state.prog[t][l];return p&&p.done;}).length; if(n<4)firstOpen=t; } });
-  TRAIL_ORDER.forEach(function(t,ti){
+  var firstOpen=null, hasPlan=!!(state.plan&&state.plan.t.length), planL=hasPlan?TRAIL_ORDER.filter(inPlan):[], restL=TRAIL_ORDER.filter(function(t){return !inPlan(t);});
+  (hasPlan?planL:TRAIL_ORDER).forEach(function(t){ if(firstOpen===null){ var n=[1,2,3,4].filter(function(l){var p=state.prog[t][l];return p&&p.done;}).length; if(n<4)firstOpen=t; } });
+  var shown=hasPlan?planL.concat(showOthers?restL:[]):TRAIL_ORDER;
+  if(hasPlan)h+='<div class="sechead"><h2>Seu plano</h2><span class="fine">'+planL.length+(planL.length===1?' trilha':' trilhas')+' para focar</span></div>';
+  else if(state.plan)h+='<div class="sechead"><h2>Trilhas</h2><span class="fine">Seu plano está vazio: ponha trilhas nele por dentro de cada uma.</span></div>';
+  shown.forEach(function(t){
+    var ti=TRAIL_ORDER.indexOf(t);
+    if(hasPlan&&t===restL[0])h+='<button class="secondary others" data-act="others" aria-expanded="true">Esconder as outras trilhas</button>';
     var T=TRAILS[t], doneN=[1,2,3,4].filter(function(l){var p=state.prog[t][l];return p&&p.done;}).length;
     var isOpen=(openTrails[t]!==undefined)?openTrails[t]:(t===firstOpen);
     var pips=[1,2,3,4].map(function(l){var p=state.prog[t][l];return '<i class="pip'+(p&&p.done?' on':'')+'"></i>';}).join('');
@@ -3039,6 +3066,7 @@ function renderHome(){
        '<span class="tmeta"><span class="pips" aria-hidden="true">'+pips+'</span><span class="chev">'+ico("chev")+'</span></span></button>';
     if(isOpen){
       h+='<div class="tbody"><p class="muted">'+T.desc+'</p>';
+      if(state.plan)h+='<button class="linkbtn planbtn" data-act="plan-toggle" data-t="'+t+'">'+(inPlan(t)?'Tirar do meu plano':'Pôr no meu plano')+'</button>';
       if(state.placed[t])h+='<div class="row2"><span class="label">Seu nível: '+LEVELS[state.placed[t]]+'</span><button class="linkbtn" data-act="placement" data-t="'+t+'">Refazer o teste</button></div>';
       else h+='<button class="secondary" data-act="placement" data-t="'+t+'">Descobrir meu nível ('+PLACE_Q+' perguntas)</button>';
       h+='<div class="lvls">';
@@ -3054,6 +3082,7 @@ function renderHome(){
     }
     h+='</section>';
   });
+  if(hasPlan&&!showOthers&&restL.length)h+='<button class="secondary others" data-act="others" aria-expanded="false">Ver as outras '+restL.length+' trilhas</button>';
 
   h+='<footer class="foot"><p>Material de estudo independente, sem vínculo com AWS, Microsoft, Oracle ou outro fornecedor. As questões são originais e foram escritas a partir de conceitos de arquitetura; não são questões de prova. Confira detalhes na documentação oficial antes de usá-los em decisões reais.</p>'+
      '<p>O progresso fica salvo neste aparelho'+(CLOUD_OK?' (e na nuvem, se você entrar com o Google)':'')+'. Para guardar uma cópia ou levar para outro aparelho, use o backup.</p>'+
@@ -3127,7 +3156,7 @@ function renderQuiz(){
   var s=sess, q=s.cur, T=TRAILS[q.t], answered=s.locked;
   var label=s.mode==="placement"?(s.all?"Nivelamento geral · ":"Nivelamento · ")+T.name:(s.mode==="review"?(s.train?"Treino · "+TEMAS[s.train.t][s.train.k].n:"Revisão"):T.name+" · "+LEVELS[q.l]);
   var pct=s.mode==="lesson"?Math.round(s.solved/Math.max(1,s.total)*100):Math.round((s.i+(answered?1:0))/s.total*100);
-  var h='<div class="qtop tc" style="--h:'+HUES[q.t]+'"><button class="ghost" data-act="home">Sair</button><div class="track"><i style="width:'+pct+'%"></i></div><span class="count">'+(s.i+1)+'/'+s.qs.length+'</span>'+
+  var h='<div class="qtop tc" style="--h:'+HUES[q.t]+'"><button class="ghost" data-act="home">Sair</button><div class="track"><i style="width:'+pct+'%"></i></div><span class="count">'+(s.i+1)+'/'+qlen(s)+'</span>'+
     (s.mode==="lesson"?'<span class="hearts" aria-label="'+heartsNow()+' vidas" title="Vidas">'+ico("heart","sm")+heartsNow()+'</span>':'')+
     '<button class="ghost icob" data-act="snd" aria-pressed="'+(prefs.sound?"true":"false")+'" aria-label="'+(prefs.sound?"Desligar os sons":"Ligar os sons")+'" title="'+(prefs.sound?"Sons ligados":"Sons desligados")+'">'+ico(prefs.sound?"vol":"mute","sm")+'</button></div>';
   h+='<section class="card qcard"><div class="qmeta"><span class="label">'+esc(label)+'</span>'+
@@ -3159,7 +3188,7 @@ function renderQuiz(){
        (!ok&&q.type?xSolution(q):'')+
        '<p data-act="hold">'+esc(q.e)+'</p>'+
        (ok?(auto?'<p class="hint">Avança sozinho. Toque no texto para pausar e ler com calma.</p>':''):'<p class="hint">'+(s.mode!=="lesson"?'Esta questão vai para a sua revisão de erros.':(s.dead?'Você perdeu a última vida. A lição termina aqui.':'Você perdeu 1 vida. Esta questão volta no fim da lição.'))+'</p>')+
-       '<button class="primary" data-act="next">'+(s.dead||s.i+1>=s.qs.length?"Ver resultado":"Continuar")+'</button></div>';
+       '<button class="primary" data-act="next">'+(s.dead||s.i+1>=qlen(s)?"Ver resultado":"Continuar")+'</button></div>';
   }
   app.innerHTML=h;
   var fbx=document.getElementById("fb"); app.style.paddingBottom=fbx?(fbx.offsetHeight+28)+"px":"";
@@ -3168,10 +3197,15 @@ function renderQuiz(){
 function renderResult(){
   var r=res, h='';
   if(r.mode==="placement"&&r.all){
-    h+='<section class="card resultcard"><div class="check">'+ico("check")+'</div><span class="label">Nivelamento geral concluído</span><h2>Seu ponto de partida</h2><div class="plist">'+
-       r.levels.map(function(x){return '<div class="prow"><span>'+esc(TRAILS[x[0]].name)+'</span><b>'+LEVELS[x[1]]+'</b></div>';}).join('')+
-       '</div><p class="muted">Acertou '+r.right+' de '+r.total+'. Os níveis até o seu ponto de partida estão liberados em cada trilha. As questões respondidas entram na revisão do dia, no tempo certo.</p>'+
-       '<button class="primary" data-act="home">Voltar às trilhas</button></section>';
+    var others=r.levels.filter(function(x){return r.plan.indexOf(x[0])<0;});
+    h+='<section class="card resultcard"><div class="check">'+ico("check")+'</div><span class="label">Nivelamento geral concluído · '+r.right+' de '+r.total+'</span>'+
+       (r.plan.length?'<h2>Seu plano de estudo</h2><p class="muted">Estas são as trilhas em que você teve mais dificuldade. Elas ficam no topo da tela inicial.</p><div class="plist">'+
+         r.plan.map(function(t){var x=r.levels.filter(function(y){return y[0]===t;})[0]; return '<div class="prow plan"><span>'+esc(TRAILS[t].name)+'</span><b>'+x[2]+' de '+PLACE_ALL_Q+'</b></div>';}).join('')+'</div>'
+        :'<h2>Mandou bem em tudo</h2><p class="muted">Você acertou as perguntas de todas as trilhas. Escolha as que quiser aprofundar.</p>')+
+       '<details class="pmore"><summary>Seu nível em todas as trilhas</summary><div class="plist">'+
+       others.concat(r.levels.filter(function(x){return r.plan.indexOf(x[0])>=0;})).map(function(x){return '<div class="prow"><span>'+esc(TRAILS[x[0]].name)+'</span><b>'+LEVELS[x[1]]+'</b></div>';}).join('')+
+       '</div></details><p class="fine">Os níveis até o seu ponto de partida estão liberados. Você pode tirar ou pôr trilhas no plano dentro de cada uma.</p>'+
+       '<button class="primary" data-act="home">Começar pelo plano</button></section>';
   }else if(r.mode==="placement"){
     h+='<section class="card resultcard"><div class="check">'+ico("check")+'</div><span class="label">Nivelamento concluído</span><h2>'+TRAILS[r.t].name+'</h2>'+
        '<div class="plist"><div class="prow"><span>Você começa no nível</span><b>'+LEVELS[r.level]+'</b></div></div>'+
@@ -3254,6 +3288,8 @@ app.addEventListener("click",function(e){
   else if(a==="wipe-no"){C.confirmWipe=false;render();}
   else if(a==="wipe-yes"){C.confirmWipe=false;wipeCloud();}
   else if(a==="placement-all")startPlacementAll();
+  else if(a==="others"){showOthers=!showOthers; render();}
+  else if(a==="plan-toggle"){var pt=b.getAttribute("data-t"); togglePlan(pt); toast(inPlan(pt)?"Trilha no seu plano.":"Trilha fora do plano."); render();}
   else if(a==="placement")startPlacement(b.getAttribute("data-t"));
   else if(a==="toggle"){var tt=b.getAttribute("data-t"); var cur=(openTrails[tt]!==undefined)?openTrails[tt]:(b.getAttribute("aria-expanded")==="true"); openTrails[tt]=!cur; render();}
   else if(a==="hold"){var ss0=sess; if(ss0&&ss0.timer){clearTimeout(ss0.timer);ss0.timer=null;} if(ss0&&!ss0.held){ss0.held=true; var cd=document.querySelector("#fb .cd"); if(cd)cd.remove(); var hn=document.querySelector("#fb .hint"); if(hn)hn.remove();}}
@@ -3309,7 +3345,7 @@ var FB_CFG={apiKey:"AIzaSyCRziWwFP9s4tSJ8440ZKzF17NGkhIxk6c",authDomain:"arquite
 var CLOUD_OK=/(^|\.)(github\.io|pages\.dev)$/.test(location.hostname)||location.hostname==="localhost"||location.hostname==="127.0.0.1";
 /* Login obrigatório no site principal. Nas pré-visualizações (endereços de PR) o login do Google
    não funciona, então lá o jogo abre sem login. Quem já entrou uma vez joga offline normalmente. */
-var AUTH_KEY="arquiteto-de-bolso.auth", ADMIN_EMAIL="danilo18.ortega@gmail.com", APP_V="v19";
+var AUTH_KEY="arquiteto-de-bolso.auth", ADMIN_EMAIL="danilo18.ortega@gmail.com", APP_V="v20";
 var AUTH_REQ=CLOUD_OK&&!/\.arquiteto-de-bolso\.pages\.dev$/.test(location.hostname);
 function knownUser(){try{return !!localStorage.getItem(AUTH_KEY);}catch(e){return false;}}
 function needGate(){return AUTH_REQ&&!C.user&&(C.authDone||C.failed||!knownUser());}
@@ -3356,6 +3392,7 @@ function mergeStates(a,b){
   r.stats={}; Object.keys(ks).forEach(function(k){var x=a.stats[k]||{r:0,w:0},y=b.stats[k]||{r:0,w:0}; r.stats[k]={r:Math.max(x.r||0,y.r||0),w:Math.max(x.w||0,y.w||0)};});
   var fa=a.flagged||{}, fb=b.flagged||{}, fk={}; Object.keys(fa).concat(Object.keys(fb)).forEach(function(i){fk[i]=1;});
   r.flagged={}; Object.keys(fk).forEach(function(i){var x=fa[i],y=fb[i]; r.flagged[i]=!x?y:(!y?x:((x.at||0)>=(y.at||0)?x:y));});
+  var pa=a.plan,pb=b.plan; r.plan=(!pa||(pb&&(pb.at||0)>(pa.at||0)))?(pb||null):pa;
   var ha=a.hearts||{u:0},hb=b.hearts||{u:0}; r.hearts=JSON.parse(JSON.stringify((hb.u||0)>(ha.u||0)?hb:ha)); r=normalize(r);
   var wa=a.wk||{k:"",xp:0},wb=b.wk||{k:"",xp:0}; r.wk=wa.k>wb.k?wa:(wb.k>wa.k?wb:{k:wa.k,xp:Math.max(wa.xp||0,wb.xp||0)});
   return r;
