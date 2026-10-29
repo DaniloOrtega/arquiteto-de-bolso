@@ -80,9 +80,19 @@ async function jogarLicao(page, certo) {
   }
 }
 
+// Abre todos os grupos de trilhas da tela inicial.
+async function abrirGrupos(page) {
+  const fechados = page.locator('.ghead[aria-expanded="false"]');
+  while ((await fechados.count()) > 0) await fechados.first().click();
+}
+
 test("a página inicial abre com todas as trilhas", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle(/Arquiteto de Bolso/);
+  // As trilhas ficam em 7 grupos; só o grupo da primeira trilha abre sozinho.
+  await expect(page.locator(".ghead")).toHaveCount(7);
+  await expect(page.locator('.ghead[aria-expanded="true"]')).toHaveCount(1);
+  await abrirGrupos(page);
   await expect(page.locator('[data-act="toggle"]')).toHaveCount(TRAIL_ORDER.length);
   await expect(page.locator(`[data-act="toggle"][data-t="${PRIMEIRA}"]`)).toContainText(TRAILS[PRIMEIRA].name);
 });
@@ -169,6 +179,7 @@ test("o app funciona offline depois da primeira visita", async ({ page, context 
   await page.reload(); // a segunda visita já passa pelo service worker
   await context.setOffline(true);
   await page.reload();
+  await abrirGrupos(page);
   await expect(page.locator('[data-act="toggle"]')).toHaveCount(TRAIL_ORDER.length);
   await context.setOffline(false);
 });
@@ -263,6 +274,7 @@ test("o nivelamento geral monta um plano só com as trilhas mais fracas", async 
   await page.locator('[data-act="home"]').first().click();
   await expect(page.locator('[data-act="toggle"]')).toHaveCount(3);
   await page.locator('[data-act="others"]').click();
+  await abrirGrupos(page);
   await expect(page.locator('[data-act="toggle"]')).toHaveCount(TRAIL_ORDER.length);
 
   // Pôr uma trilha a mais no plano.
@@ -272,6 +284,7 @@ test("o nivelamento geral monta um plano só com as trilhas mais fracas", async 
   await page.locator(`[data-act="plan-toggle"][data-t="${extra}"]`).click();
   await page.locator('[data-act="others"]').first().click();
   await expect(page.locator('[data-act="toggle"]')).toHaveCount(4);
+  await expect(page.locator(".ghead")).toHaveCount(0);
 });
 
 test("o teste de nível de uma trilha vai até o fim", async ({ page }) => {
@@ -289,6 +302,7 @@ test("o teste de nível de uma trilha vai até o fim", async ({ page }) => {
 test("a trilha de equivalências sorteia 8 questões de um banco maior", async ({ page }) => {
   expect(QS.filter((x) => x.t === "eqv" && x.l === 1).length).toBeGreaterThan(8);
   await page.goto("/");
+  await abrirGrupos(page);
   await page.locator('[data-act="toggle"][data-t="eqv"]').click();
   await page.locator('[data-act="lesson"][data-t="eqv"][data-l="1"]').click();
   await expect(page.locator(".count")).toContainText("1/8");
@@ -300,6 +314,7 @@ test("a trilha de equivalências sorteia 8 questões de um banco maior", async (
 for (const [t, nome] of [["aws", "AWS Cloud Practitioner"], ["azr", "Azure Fundamentals"], ["gcp", "Google Cloud Digital Leader"], ["oci", "OCI Foundations"], ["svl", "Serverless e gerenciados (avançado)"]]) test(`a trilha ${nome} tem os 4 níveis e abre a lição`, async ({ page }) => {
   for (const l of [1, 2, 3, 4]) expect(QS.filter((x) => x.t === t && x.l === l).length).toBeGreaterThan(8);
   await page.goto("/");
+  await abrirGrupos(page);
   await page.locator(`[data-act="toggle"][data-t="${t}"]`).click();
   await page.locator(`[data-act="lesson"][data-t="${t}"][data-l="1"]`).click();
   await expect(page.locator(".count")).toContainText("1/8");

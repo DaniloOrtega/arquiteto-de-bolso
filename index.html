@@ -168,6 +168,11 @@ p{margin:0}
 .gains li{padding:2px 0}
 .sechead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:18px 4px 8px;flex-wrap:wrap}
 .sechead h2{margin:0}
+.ghead{display:flex;align-items:center;gap:10px;width:100%;margin:14px 0 4px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.ghead .gname{font-weight:800;flex:1}
+.ghead .fine{margin:0}
+.ghead .chev{transition:transform .2s}
+.ghead[aria-expanded="true"] .chev{transform:rotate(180deg)}
 .others{margin:4px 0 14px}
 .prow.plan b{color:var(--bad)}
 .pmore{margin:10px 0;text-align:left}
@@ -5037,7 +5042,18 @@ function unlocked(t,l){
 
 /* ---------- Sessões ---------- */
 var bkText="", openTrails={};
-var showOthers=false;
+var showOthers=false, openGroups={};
+/* Grupos da tela inicial: só organizam a lista, não mudam a ordem de estudo nem o nivelamento. */
+var GROUPS=[
+ {n:"Fundamentos",t:["rede","arq","nuv","rnu"]},
+ {n:"Clouds e certificações",t:["eqv","aws","azr","gcp","oci","svl"]},
+ {n:"Segurança e resiliência",t:["seg","ha"]},
+ {n:"Dados e IA",t:["db","idd","ia"]},
+ {n:"Plataforma e operação",t:["cont","ops","fin"]},
+ {n:"Desenho de soluções",t:["sw","disc","gov"]},
+ {n:"Idiomas técnicos",t:["ing","esp"]}
+];
+function groupLevels(g){var n=0;g.t.forEach(function(t){[1,2,3,4].forEach(function(l){var p=state.prog[t][l]; if(p&&p.done)n++;});}); return n;}
 // Trilhas finais (avançadas) ficam fora do nivelamento geral e do plano automático.
 function genTrails(){return TRAIL_ORDER.filter(function(t){return !TRAILS[t].final;});}
 function inPlan(t){return !!(state.plan&&state.plan.t.indexOf(t)>=0);}
@@ -5380,9 +5396,25 @@ function renderHome(){
   var shown=hasPlan?planL.concat(showOthers?restL:[]):TRAIL_ORDER;
   if(hasPlan)h+='<div class="sechead"><h2>Seu plano</h2><span class="fine">'+planL.length+(planL.length===1?' trilha':' trilhas')+' para focar</span></div>';
   else if(state.plan)h+='<div class="sechead"><h2>Trilhas</h2><span class="fine">Seu plano está vazio: ponha trilhas nele por dentro de cada uma.</span></div>';
-  shown.forEach(function(t){
-    var ti=TRAIL_ORDER.indexOf(t);
-    if(hasPlan&&t===restL[0])h+='<button class="secondary others" data-act="others" aria-expanded="true">Esconder as outras trilhas</button>';
+  // Ordem de exibição: o plano primeiro (se houver) e depois os grupos, só com as trilhas que ainda não estão no plano.
+  var order=[];
+  planL.forEach(function(t){order.push({t:t});});
+  if(hasPlan&&showOthers&&restL.length)order.push({hide:true});
+  GROUPS.forEach(function(g,gi){
+    var ts=g.t.filter(function(t){return TRAILS[t]&&shown.indexOf(t)>=0&&(!hasPlan||!inPlan(t));});
+    if(!ts.length)return;
+    var gOpen=openGroups[gi]!==undefined?openGroups[gi]:(ts.indexOf(firstOpen)>=0);
+    order.push({g:g,gi:gi,open:gOpen,n:g.t.length});
+    if(gOpen)ts.forEach(function(t){order.push({t:t});});
+  });
+  order.forEach(function(it){
+    if(it.hide){h+='<button class="secondary others" data-act="others" aria-expanded="true">Esconder as outras trilhas</button>'; return;}
+    if(it.g){
+      var gl=groupLevels(it.g);
+      h+='<button class="ghead" data-act="grp" data-g="'+it.gi+'" aria-expanded="'+(it.open?"true":"false")+'"><span class="gname">'+esc(it.g.n)+'</span><span class="fine">'+it.n+(it.n===1?' trilha':' trilhas')+' · '+gl+'/'+(it.n*4)+' níveis</span><span class="chev">'+ico("chev")+'</span></button>';
+      return;
+    }
+    var t=it.t, ti=TRAIL_ORDER.indexOf(t);
     var T=TRAILS[t], doneN=[1,2,3,4].filter(function(l){var p=state.prog[t][l];return p&&p.done;}).length;
     var isOpen=(openTrails[t]!==undefined)?openTrails[t]:(t===firstOpen);
     var pips=[1,2,3,4].map(function(l){var p=state.prog[t][l];return '<i class="pip'+(p&&p.done?' on':'')+'"></i>';}).join('');
@@ -5615,6 +5647,7 @@ app.addEventListener("click",function(e){
   else if(a==="wipe-yes"){C.confirmWipe=false;wipeCloud();}
   else if(a==="placement-all")startPlacementAll();
   else if(a==="others"){showOthers=!showOthers; render();}
+  else if(a==="grp"){var gi=b.getAttribute("data-g"); openGroups[gi]=!(openGroups[gi]!==undefined?openGroups[gi]:b.getAttribute("aria-expanded")==="true"); render();}
   else if(a==="plan-toggle"){var pt=b.getAttribute("data-t"); togglePlan(pt); toast(inPlan(pt)?"Trilha no seu plano.":"Trilha fora do plano."); render();}
   else if(a==="placement")startPlacement(b.getAttribute("data-t"));
   else if(a==="toggle"){var tt=b.getAttribute("data-t"); var cur=(openTrails[tt]!==undefined)?openTrails[tt]:(b.getAttribute("aria-expanded")==="true"); openTrails[tt]=!cur; render();}
@@ -5671,7 +5704,7 @@ var FB_CFG={apiKey:"AIzaSyCRziWwFP9s4tSJ8440ZKzF17NGkhIxk6c",authDomain:"arquite
 var CLOUD_OK=/(^|\.)(github\.io|pages\.dev)$/.test(location.hostname)||location.hostname==="localhost"||location.hostname==="127.0.0.1";
 /* Login obrigatório no site principal. Nas pré-visualizações (endereços de PR) o login do Google
    não funciona, então lá o jogo abre sem login. Quem já entrou uma vez joga offline normalmente. */
-var AUTH_KEY="arquiteto-de-bolso.auth", ADMIN_EMAIL="danilo18.ortega@gmail.com", APP_V="v26";
+var AUTH_KEY="arquiteto-de-bolso.auth", ADMIN_EMAIL="danilo18.ortega@gmail.com", APP_V="v27";
 var AUTH_REQ=CLOUD_OK&&!/\.arquiteto-de-bolso\.pages\.dev$/.test(location.hostname);
 function knownUser(){try{return !!localStorage.getItem(AUTH_KEY);}catch(e){return false;}}
 function needGate(){return AUTH_REQ&&!C.user&&(C.authDone||C.failed||!knownUser());}
