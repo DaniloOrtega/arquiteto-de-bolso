@@ -5647,7 +5647,7 @@ app.addEventListener("click",function(e){
   else if(a==="wipe-yes"){C.confirmWipe=false;wipeCloud();}
   else if(a==="placement-all")startPlacementAll();
   else if(a==="others"){showOthers=!showOthers; render();}
-  else if(a==="grp"){var gi=b.getAttribute("data-g"); openGroups[gi]=!(openGroups[gi]!==undefined?openGroups[gi]:b.getAttribute("aria-expanded")==="true"); render();}
+  else if(a==="grp"){var gi=b.getAttribute("data-g"); var wasOpen=openGroups[gi]!==undefined?openGroups[gi]:b.getAttribute("aria-expanded")==="true"; openGroups[gi]=!wasOpen; render();}
   else if(a==="plan-toggle"){var pt=b.getAttribute("data-t"); togglePlan(pt); toast(inPlan(pt)?"Trilha no seu plano.":"Trilha fora do plano."); render();}
   else if(a==="placement")startPlacement(b.getAttribute("data-t"));
   else if(a==="toggle"){var tt=b.getAttribute("data-t"); var cur=(openTrails[tt]!==undefined)?openTrails[tt]:(b.getAttribute("aria-expanded")==="true"); openTrails[tt]=!cur; render();}
@@ -5704,7 +5704,7 @@ var FB_CFG={apiKey:"AIzaSyCRziWwFP9s4tSJ8440ZKzF17NGkhIxk6c",authDomain:"arquite
 var CLOUD_OK=/(^|\.)(github\.io|pages\.dev)$/.test(location.hostname)||location.hostname==="localhost"||location.hostname==="127.0.0.1";
 /* Login obrigatório no site principal. Nas pré-visualizações (endereços de PR) o login do Google
    não funciona, então lá o jogo abre sem login. Quem já entrou uma vez joga offline normalmente. */
-var AUTH_KEY="arquiteto-de-bolso.auth", ADMIN_EMAIL="danilo18.ortega@gmail.com", APP_V="v27";
+var AUTH_KEY="arquiteto-de-bolso.auth", ADMIN_EMAIL="danilo18.ortega@gmail.com", APP_V="v28";
 var AUTH_REQ=CLOUD_OK&&!/\.arquiteto-de-bolso\.pages\.dev$/.test(location.hostname);
 function knownUser(){try{return !!localStorage.getItem(AUTH_KEY);}catch(e){return false;}}
 function needGate(){return AUTH_REQ&&!C.user&&(C.authDone||C.failed||!knownUser());}
