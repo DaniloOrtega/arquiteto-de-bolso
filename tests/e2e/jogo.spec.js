@@ -282,3 +282,14 @@ test("o teste de nível de uma trilha vai até o fim", async ({ page }) => {
   }
   await expect(page.locator("#app")).toContainText("Nivelamento concluído");
 });
+
+test("a trilha de equivalências sorteia 8 questões de um banco maior", async ({ page }) => {
+  expect(QS.filter((x) => x.t === "eqv" && x.l === 1).length).toBeGreaterThan(8);
+  await page.goto("/");
+  await page.locator('[data-act="toggle"][data-t="eqv"]').click();
+  await page.locator('[data-act="lesson"][data-t="eqv"][data-l="1"]').click();
+  await expect(page.locator(".count")).toContainText("1/8");
+  const txt = (await page.locator(".qtext").textContent()).trim();
+  expect(QS.find((x) => x.t === "eqv" && x.q === txt), `questão "${txt}"`).toBeTruthy();
+  await page.screenshot({ path: "tests/e2e/telas/equivalencias.png", fullPage: true });
+});

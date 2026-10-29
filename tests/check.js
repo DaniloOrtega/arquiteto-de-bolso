@@ -29,7 +29,7 @@ D.RAW.forEach((r, i) => {
   const k = r[0] + r[1]; groups[k] = (groups[k] || 0) + 1;
 });
 D.TRAIL_ORDER.forEach((t) => [1, 2, 3, 4].forEach((l) => {
-  if (groups[t + l] !== 8) fail(`${t} nível ${l}: tem ${groups[t + l] || 0} questões, precisa de 8`);
+  if (!(groups[t + l] >= 8)) fail(`${t} nível ${l}: tem ${groups[t + l] || 0} questões, precisa de pelo menos 8`);
 }));
 D.XRAW.forEach((r, i) => {
   const where = `XRAW[${i}] (${r[0]} ${r[1]})`;
