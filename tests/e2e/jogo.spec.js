@@ -243,11 +243,14 @@ test("sem login, o site pede para entrar com o Google", async ({ page }) => {
 test("o nivelamento geral monta um plano só com as trilhas mais fracas", async ({ page }) => {
   await page.goto("/");
   await page.locator('[data-act="placement-all"]').first().click();
-  const total = TRAIL_ORDER.length * 2;
+  // Trilhas finais (avançadas) ficam fora do nivelamento geral.
+  const geral = TRAIL_ORDER.filter((t) => !TRAILS[t].final);
+  expect(geral).not.toContain("svl");
+  const total = geral.length * 2;
   // Acerta tudo, menos nas trilhas 2, 4 e 6 (erra as duas perguntas de cada uma).
   const fracas = [TRAIL_ORDER[1], TRAIL_ORDER[3], TRAIL_ORDER[5]];
   for (let i = 1; i <= total; i++) {
-    await expect(page.locator(".count")).toContainText(`${i}/`);
+    await expect(page.locator(".count")).toContainText(`${i}/${total}`);
     await responder(page, (q) => !fracas.includes(q.t), true);
     await page.locator('[data-act="next"]').click();
   }
@@ -294,7 +297,7 @@ test("a trilha de equivalências sorteia 8 questões de um banco maior", async (
   await page.screenshot({ path: "tests/e2e/telas/equivalencias.png", fullPage: true });
 });
 
-for (const [t, nome] of [["aws", "AWS Cloud Practitioner"], ["azr", "Azure Fundamentals"], ["gcp", "Google Cloud Digital Leader"], ["oci", "OCI Foundations"]]) test(`a trilha ${nome} tem os 4 níveis e abre a lição`, async ({ page }) => {
+for (const [t, nome] of [["aws", "AWS Cloud Practitioner"], ["azr", "Azure Fundamentals"], ["gcp", "Google Cloud Digital Leader"], ["oci", "OCI Foundations"], ["svl", "Serverless e gerenciados (avançado)"]]) test(`a trilha ${nome} tem os 4 níveis e abre a lição`, async ({ page }) => {
   for (const l of [1, 2, 3, 4]) expect(QS.filter((x) => x.t === t && x.l === l).length).toBeGreaterThan(8);
   await page.goto("/");
   await page.locator(`[data-act="toggle"][data-t="${t}"]`).click();
