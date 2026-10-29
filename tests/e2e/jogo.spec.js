@@ -27,30 +27,36 @@ test.afterEach(async ({ page }) => {
 });
 
 // Responde a pergunta que está na tela. certo=true acerta, certo=false erra de propósito.
-async function responder(page, certo) {
+// Botão cujo texto é exatamente "texto" ("HTTP" não pode pegar "HTTPS").
+// O botão pode ter na frente a letra da alternativa (A-D) ou o número do par.
+const exato = (texto) => new RegExp("^\\s*[A-D0-9]?\\s*" + texto.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*$");
+const botaoExato = (page, sel, texto) => page.locator(sel).filter({ hasText: exato(texto) }).first();
+
+async function responder(page, certo, todas = false) {
   const enunciado = (await page.locator(".qtext").textContent()).trim();
-  const q = QS.find((x) => x.t === PRIMEIRA && x.q === enunciado);
+  const q = QS.find((x) => (todas || x.t === PRIMEIRA) && x.q === enunciado);
   expect(q, `questão da tela não achada nos dados: "${enunciado}"`).toBeTruthy();
+  if (typeof certo === "function") certo = certo(q);
 
   if (!q.type) {
     const alvo = certo ? q.o[0] : q.o[1];
-    await page.locator('[data-act="pick"]', { hasText: alvo }).first().click();
+    await botaoExato(page, '[data-act="pick"]', alvo).click();
   } else if (q.type === "order") {
     const ordem = certo ? q.items : [...q.items].reverse();
-    for (const item of ordem) await page.locator('[data-act="ord-add"]', { hasText: item }).first().click();
+    for (const item of ordem) await botaoExato(page, '[data-act="ord-add"]', item).click();
     await page.locator('[data-act="check"]').click();
   } else if (q.type === "match") {
     const n = q.pairs.length;
     for (let i = 0; i < n; i++) {
       const direita = certo ? q.pairs[i][1] : q.pairs[(i + 1) % n][1];
-      await page.locator('[data-act="m-pick"][data-s="L"]', { hasText: q.pairs[i][0] }).first().click();
-      await page.locator('[data-act="m-pick"][data-s="R"]', { hasText: direita }).first().click();
+      await botaoExato(page, '[data-act="m-pick"][data-s="L"]', q.pairs[i][0]).click();
+      await botaoExato(page, '[data-act="m-pick"][data-s="R"]', direita).click();
     }
     await page.locator('[data-act="check"]').click();
   } else if (q.type === "build") {
     for (let k = 0; k < q.slots.length; k++) {
       await page.locator(`[data-act="b-slot"][data-i="${k}"]`).click();
-      await page.locator('[data-act="b-chip"]', { hasText: q.slots[k].a }).first().click();
+      await botaoExato(page, '[data-act="b-chip"]', q.slots[k].a).click();
     }
     await page.locator('[data-act="check"]').click();
   }
@@ -232,4 +238,47 @@ test("sem login, o site pede para entrar com o Google", async ({ page }) => {
   await expect(page.locator(".gate")).toContainText("funciona offline");
   await expect(page.locator('[data-act="toggle"]')).toHaveCount(0);
   await page.screenshot({ path: "tests/e2e/telas/login.png", fullPage: true });
+});
+
+test("o nivelamento geral monta um plano só com as trilhas mais fracas", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('[data-act="placement-all"]').first().click();
+  const total = TRAIL_ORDER.length * 2;
+  // Acerta tudo, menos nas trilhas 2, 4 e 6 (erra as duas perguntas de cada uma).
+  const fracas = [TRAIL_ORDER[1], TRAIL_ORDER[3], TRAIL_ORDER[5]];
+  for (let i = 1; i <= total; i++) {
+    await expect(page.locator(".count")).toContainText(`${i}/`);
+    await responder(page, (q) => !fracas.includes(q.t), true);
+    await page.locator('[data-act="next"]').click();
+  }
+  await expect(page.locator("#app")).toContainText("Seu plano de estudo");
+  for (const t of fracas) await expect(page.locator(".prow.plan")).toContainText([TRAILS[t].name]);
+  await expect(page.locator(".prow.plan")).toHaveCount(3);
+  await page.screenshot({ path: "tests/e2e/telas/plano.png", fullPage: true });
+
+  // Na tela inicial, só o plano aparece; as outras ficam recolhidas.
+  await page.locator('[data-act="home"]').first().click();
+  await expect(page.locator('[data-act="toggle"]')).toHaveCount(3);
+  await page.locator('[data-act="others"]').click();
+  await expect(page.locator('[data-act="toggle"]')).toHaveCount(TRAIL_ORDER.length);
+
+  // Pôr uma trilha a mais no plano.
+  const extra = TRAIL_ORDER[0];
+  const botao = page.locator(`[data-act="toggle"][data-t="${extra}"]`);
+  if ((await botao.getAttribute("aria-expanded")) !== "true") await botao.click();
+  await page.locator(`[data-act="plan-toggle"][data-t="${extra}"]`).click();
+  await page.locator('[data-act="others"]').first().click();
+  await expect(page.locator('[data-act="toggle"]')).toHaveCount(4);
+});
+
+test("o teste de nível de uma trilha vai até o fim", async ({ page }) => {
+  await page.goto("/");
+  await abrirTrilha(page);
+  await page.locator(`[data-act="placement"][data-t="${PRIMEIRA}"]`).click();
+  for (let i = 1; i <= 5; i++) {
+    await expect(page.locator(".count")).toContainText(`${i}/5`);
+    await responder(page, true);
+    await page.locator('[data-act="next"]').click();
+  }
+  await expect(page.locator("#app")).toContainText("Nivelamento concluído");
 });
