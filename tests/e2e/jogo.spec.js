@@ -294,7 +294,7 @@ test("a trilha de equivalências sorteia 8 questões de um banco maior", async (
   await page.screenshot({ path: "tests/e2e/telas/equivalencias.png", fullPage: true });
 });
 
-for (const [t, nome] of [["aws", "AWS Cloud Practitioner"], ["azr", "Azure Fundamentals"]]) test(`a trilha ${nome} tem os 4 níveis e abre a lição`, async ({ page }) => {
+for (const [t, nome] of [["aws", "AWS Cloud Practitioner"], ["azr", "Azure Fundamentals"], ["gcp", "Google Cloud Digital Leader"]]) test(`a trilha ${nome} tem os 4 níveis e abre a lição`, async ({ page }) => {
   for (const l of [1, 2, 3, 4]) expect(QS.filter((x) => x.t === t && x.l === l).length).toBeGreaterThan(8);
   await page.goto("/");
   await page.locator(`[data-act="toggle"][data-t="${t}"]`).click();
