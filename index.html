@@ -3571,7 +3571,7 @@ var FB_CFG={apiKey:"AIzaSyCRziWwFP9s4tSJ8440ZKzF17NGkhIxk6c",authDomain:"arquite
 var CLOUD_OK=/(^|\.)(github\.io|pages\.dev)$/.test(location.hostname)||location.hostname==="localhost"||location.hostname==="127.0.0.1";
 /* Login obrigatório no site principal. Nas pré-visualizações (endereços de PR) o login do Google
    não funciona, então lá o jogo abre sem login. Quem já entrou uma vez joga offline normalmente. */
-var AUTH_KEY="arquiteto-de-bolso.auth", ADMIN_EMAIL="danilo18.ortega@gmail.com", APP_V="v20";
+var AUTH_KEY="arquiteto-de-bolso.auth", ADMIN_EMAIL="danilo18.ortega@gmail.com", APP_V="v21";
 var AUTH_REQ=CLOUD_OK&&!/\.arquiteto-de-bolso\.pages\.dev$/.test(location.hostname);
 function knownUser(){try{return !!localStorage.getItem(AUTH_KEY);}catch(e){return false;}}
 function needGate(){return AUTH_REQ&&!C.user&&(C.authDone||C.failed||!knownUser());}
