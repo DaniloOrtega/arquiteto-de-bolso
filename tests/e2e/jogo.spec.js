@@ -293,3 +293,13 @@ test("a trilha de equivalências sorteia 8 questões de um banco maior", async (
   expect(QS.find((x) => x.t === "eqv" && x.q === txt), `questão "${txt}"`).toBeTruthy();
   await page.screenshot({ path: "tests/e2e/telas/equivalencias.png", fullPage: true });
 });
+
+test("a trilha AWS Cloud Practitioner tem os 4 níveis e abre a lição", async ({ page }) => {
+  for (const l of [1, 2, 3, 4]) expect(QS.filter((x) => x.t === "aws" && x.l === l).length).toBeGreaterThan(8);
+  await page.goto("/");
+  await page.locator('[data-act="toggle"][data-t="aws"]').click();
+  await page.locator('[data-act="lesson"][data-t="aws"][data-l="1"]').click();
+  await expect(page.locator(".count")).toContainText("1/8");
+  const txt = (await page.locator(".qtext").textContent()).trim();
+  expect(QS.find((x) => x.t === "aws" && x.q === txt), `questão "${txt}"`).toBeTruthy();
+});
