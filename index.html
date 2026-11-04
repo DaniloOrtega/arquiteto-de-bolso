@@ -5704,7 +5704,7 @@ var FB_CFG={apiKey:"AIzaSyCRziWwFP9s4tSJ8440ZKzF17NGkhIxk6c",authDomain:"arquite
 var CLOUD_OK=/(^|\.)(github\.io|pages\.dev)$/.test(location.hostname)||location.hostname==="localhost"||location.hostname==="127.0.0.1";
 /* Login obrigatório no site principal. Nas pré-visualizações (endereços de PR) o login do Google
    não funciona, então lá o jogo abre sem login. Quem já entrou uma vez joga offline normalmente. */
-var AUTH_KEY="arquiteto-de-bolso.auth", ADMIN_EMAIL="danilo18.ortega@gmail.com", APP_V="v28";
+var AUTH_KEY="arquiteto-de-bolso.auth", ADMIN_EMAIL="danilo18.ortega@gmail.com", APP_V="v29";
 var AUTH_REQ=CLOUD_OK&&!/\.arquiteto-de-bolso\.pages\.dev$/.test(location.hostname);
 function knownUser(){try{return !!localStorage.getItem(AUTH_KEY);}catch(e){return false;}}
 function needGate(){return AUTH_REQ&&!C.user&&(C.authDone||C.failed||!knownUser());}
@@ -5791,7 +5791,7 @@ function cloudLogin(){
   var pr=new firebase.auth.GoogleAuthProvider();
   C.fauth.signInWithPopup(pr).catch(function(e){
     if(e&&(e.code==="auth/popup-blocked"||e.code==="auth/operation-not-supported-in-this-environment")){C.fauth.signInWithRedirect(pr);}
-    else if(e&&e.code!=="auth/popup-closed-by-user"&&e.code!=="auth/cancelled-popup-request")toast("Não consegui entrar. Tente de novo.");
+    else if(e&&e.code!=="auth/popup-closed-by-user"&&e.code!=="auth/cancelled-popup-request")toast("Não consegui entrar ("+(e&&e.code?e.code:"erro desconhecido")+"). Tente de novo.");
   });
 }
 function cloudLogout(){C.fauth.signOut().then(function(){view="home";toast("Você saiu da conta.");render();});}
